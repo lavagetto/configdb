@@ -8,25 +8,26 @@ TEST_SCHEMA = '''
 {
 "host": {
   "name": {
-    "type": "String"
+    "type": "string"
   },
   "ip": {
-    "type": "String(16)"
+    "type": "string",
+    "validator": "ip"
   },
   "ip6": {
-    "type": "String(128)"
+    "type": "string"
   },
   "roles": {
     "type": "relation",
     "rel": "role"
   },
-  "acl": {
+  "_acl": {
     "r": "*", "w": "user/admin"
   }
 },
 "role": {
   "name": {
-    "type": "String"
+    "type": "string"
   }
 },
 "user": {
@@ -40,7 +41,7 @@ TEST_SCHEMA = '''
       "w": "user/admin,@self"
     }
   },
-  "acl": {
+  "_acl": {
     "r": "*", "w": "user/admin"
   }
 },
@@ -51,7 +52,7 @@ TEST_SCHEMA = '''
   "key": {
     "type": "text"
   },
-  "acl": {
+  "_acl": {
     "w": "@users"
   }
 }

@@ -1,16 +1,21 @@
 import json
 from admdb.db import acl
+from admdb.db import validation
 from admdb import exceptions
 
 
-class Field(acl.AclMixin):
+class Field(acl.AclMixin, validation.ValidatorMixin):
     """A generic field of our schema."""
 
     def __init__(self, entity, name, attrs):
         self.set_acl(attrs.pop('acl', None))
+        self.set_validator(attrs.pop('validator', None))
         self.type = attrs.pop('type', 'string')
         self.name = name
         self.attrs = attrs
+
+    def is_relation(self):
+        return False
 
 
 class Relation(Field):
@@ -24,28 +29,46 @@ class Relation(Field):
         self.remote_name = attrs.pop('rel')
         Field.__init__(self, entity, name, attrs)
 
+    def is_relation(self):
+        return True
+
+
+# Table of known field types.
+type_map = {
+    'string': Field,
+    'password': Field,
+    'text': Field,
+    'binary': Field,
+    'int': Field,
+    #'date': DateField,
+    'relation': Relation,
+    }
+
 
 class Entity(acl.AclMixin):
     """A schema entity ('table', or 'class', equivalently)."""
 
     def __init__(self, table_name, table_def):
         self.name = table_name
+        self.description = None
         self.fields = {}
         for name, attrs in table_def.iteritems():
-            # 'acl' is a special entity attribute.
-            if name == 'acl':
+            # Check some special entity attributes.
+            if name == '_acl':
                 self.set_acl(attrs)
-                continue
-            # Set some defaults for the special 'name' field.
-            if name == 'name':
-                attrs.update({'unique': True,
-                              'index': True,
-                              'nullable': False})
-            if attrs['type'] == 'relation':
-                field = Relation(self, name, attrs)
+            elif name == '_help':
+                self.description = attrs
             else:
-                field = Field(self, name, attrs)
-            self.fields[name] = field
+                # Set some defaults for the special 'name' field.
+                if name == 'name':
+                    attrs.update({'unique': True,
+                                  'index': True,
+                                  'nullable': False})
+                ftype = attrs.get('type', 'string').lower()
+                if ftype not in type_map:
+                    raise exceptions.SchemaError(
+                        'field "%s" has unknown type "%s"' % (name, ftype))
+                self.fields[name] = type_map[ftype](self, name, attrs)
         if 'name' not in self.fields:
             raise exceptions.SchemaError('missing required "name" field')
 
@@ -66,5 +89,5 @@ class Schema(object):
     def get_entity(self, name):
         return self.tables.get(name)
 
-    def get_tables(self):
-        return self.tables
+    def get_entities(self):
+        return self.tables.itervalues()

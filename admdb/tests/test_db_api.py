@@ -24,98 +24,44 @@ class DbApiTest(TestBase):
             u.ssh_keys.append(sk)
 
         self.api = db_api.AdmDbApi(self.schema, self.db)
+        self.ctx = acl.AuthContext('admin', ['admins'])
 
     def test_get(self):
-        auth_ctx = acl.AuthContext('admin', ['admins'])
-        result = self.api.get('host', 'obz', auth_ctx)
+        result = self.api.get('host', 'obz', self.ctx)
         self.assertTrue(result is not None)
         self.assertEquals('obz', result.name)
 
     def test_get_nonexisting_obj_returns_none(self):
-        auth_ctx = acl.AuthContext('admin', ['admins'])
         self.assertRaises(exceptions.NotFound,
                           self.api.get,
-                          'host', 'whrarggh', auth_ctx)
+                          'host', 'whrarggh', self.ctx)
 
     def test_get_nonexisting_entity_raises_notfound(self):
-        auth_ctx = acl.AuthContext('admin', ['admins'])
         self.assertRaises(exceptions.NotFound,
                           self.api.get,
-                          'whrarggh', 'obz', auth_ctx)
+                          'whrarggh', 'obz', self.ctx)
 
     def test_find(self):
-        auth_ctx = acl.AuthContext('admin', ['admins'])
-        result = self.api.find('host', {'name': 'obz'}, auth_ctx)
+        result = self.api.find('host', {'name': 'obz'}, self.ctx)
         self.assertTrue(result is not None)
         self.assertEquals(1, len(result))
         self.assertEquals('obz', result[0].name)
 
     def test_create_simple(self):
-        auth_ctx = acl.AuthContext('admin', ['admins'])
         host_data = {'name': 'utz', 'ip': '2.3.4.5'}
-        result = self.api.create('host', host_data, auth_ctx)
+        result = self.api.create('host', host_data, self.ctx)
         self.assertTrue(result > 0)
 
     def test_create_with_relations(self):
-        auth_ctx = acl.AuthContext('admin', ['admins'])
         host_data = {'name': 'utz', 'ip': '2.3.4.5',
                      'roles': ['role1']}
-        result = self.api.create('host', host_data, auth_ctx)
+        result = self.api.create('host', host_data, self.ctx)
         self.assertTrue(result > 0)
 
-    def test_update_ok(self):
-        auth_ctx = acl.AuthContext('admin', ['admins'])
-        result = self.api.update('host', 'obz', {'ip': '2.3.4.5'}, auth_ctx)
-        self.assertTrue(result)
-
-        self.assertEquals('2.3.4.5',
-                          self.api.get('host', 'obz', auth_ctx).ip)
-
-    def test_update_modify_relation(self):
-        auth_ctx = acl.AuthContext('admin', ['admins'])
-        result = self.api.update('host', 'obz', {'roles': ['role2']}, auth_ctx)
-        self.assertTrue(result)
-
-        new_roles = set(x.name
-                        for x in self.api.get('host', 'obz', auth_ctx).roles)
-        self.assertEquals(set(['role2']), new_roles)
-
-    def test_update_clear_relation(self):
-        auth_ctx = acl.AuthContext('admin', ['admins'])
-        result = self.api.update('host', 'obz', {'roles': []}, auth_ctx)
-        self.assertTrue(result)
-        self.assertEquals(0, len(self.api.get('host', 'obz', auth_ctx).roles))
-
-        auth_ctx = acl.AuthContext('admin', ['admins'])
-        result = self.api.update('host', 'obz', {'roles': None}, auth_ctx)
-        self.assertTrue(result)
-        self.assertEquals(0, len(self.api.get('host', 'obz', auth_ctx).roles))
-
-    def test_update_modify_relation_error(self):
-        auth_ctx = acl.AuthContext('admin', ['admins'])
-        self.assertRaises(exceptions.RelationError,
-                          self.api.update,
-                          'host', 'obz', {'roles': ['blah']}, auth_ctx)
-
-    def test_delete(self):
-        auth_ctx = acl.AuthContext('admin', ['admins'])
-        result = self.api.delete('host', 'obz', auth_ctx)
-        self.assertTrue(result)
-
-        # double-check
+    def test_create_unknown_entity(self):
         self.assertRaises(exceptions.NotFound,
-                          self.api.get,
-                          'host', 'obz',  auth_ctx)
-
-        # a second time should still return true
-        result = self.api.delete('host', 'obz', auth_ctx)
-        self.assertTrue(result)
-
-    def test_update_bad_acl(self):
-        auth_ctx = acl.AuthContext('bad_user')
-        self.assertRaises(exceptions.AclError,
-                          self.api.update,
-                          'host', 'obz', {'ip': ['1.2.3.4']}, auth_ctx)
+                          self.api.create,
+                          'noent', {'something': 'else'}, self.ctx)
 
     def test_create_bad_acl(self):
         auth_ctx = acl.AuthContext('bad_user')
@@ -123,6 +69,85 @@ class DbApiTest(TestBase):
         self.assertRaises(exceptions.AclError,
                           self.api.create,
                           'host', host_data, auth_ctx)
+
+    def test_update_ok(self):
+        result = self.api.update('host', 'obz', {'ip': '2.3.4.5'}, self.ctx)
+        self.assertTrue(result)
+
+        self.assertEquals('2.3.4.5',
+                          self.api.get('host', 'obz', self.ctx).ip)
+
+    def test_update_modify_relation(self):
+        self.assertTrue(
+            self.api.update('host', 'obz', {'roles': ['role2']}, self.ctx))
+        new_roles = set(x.name
+                        for x in self.api.get('host', 'obz', self.ctx).roles)
+        self.assertEquals(set(['role2']), new_roles)
+
+    def test_update_clear_relation(self):
+        self.assertTrue(
+            self.api.update('host', 'obz', {'roles': []}, self.ctx))
+        self.assertEquals(0, len(self.api.get('host', 'obz', self.ctx).roles))
+
+        self.assertTrue(
+            self.api.update('host', 'obz', {'roles': None}, self.ctx))
+        self.assertEquals(0, len(self.api.get('host', 'obz', self.ctx).roles))
+
+    def test_update_modify_relation_error(self):
+        self.assertRaises(exceptions.RelationError,
+                          self.api.update,
+                          'host', 'obz', {'roles': ['blah']}, self.ctx)
+
+    def test_update_validation_error(self):
+        self.assertRaises(exceptions.ValidationError,
+                          self.api.update,
+                          'host', 'obz', {'ip': '299.0.0.1'}, self.ctx)
+
+    def test_update_unknown_entity_error(self):
+        self.assertRaises(exceptions.NotFound,
+                          self.api.update,
+                          'noent', 'obz', {'ip': '299.0.0.1'}, self.ctx)
+
+    def test_update_unknown_object_error(self):
+        self.assertRaises(exceptions.NotFound,
+                          self.api.update,
+                          'host', 'notfound', {'ip': '299.0.0.1'}, self.ctx)
+
+    def test_update_bad_acl(self):
+        auth_ctx = acl.AuthContext('bad_user')
+        self.assertRaises(exceptions.AclError,
+                          self.api.update,
+                          'host', 'obz', {'ip': '2.3.4.5'}, auth_ctx)
+
+    def test_update_extra_fields(self):
+        self.assertRaises(exceptions.ValidationError,
+                          self.api.update,
+                          'host', 'obz',
+                          {'ip': '1.2.3.4', 'extra': 'read all about it'},
+                          self.ctx)
+
+    def test_delete(self):
+        self.assertTrue(
+            self.api.delete('host', 'obz', self.ctx))
+
+        self.assertRaises(exceptions.NotFound,
+                          self.api.get,
+                          'host', 'obz',  self.ctx)
+
+    def test_delete_twice(self):
+        self.assertTrue(
+            self.api.delete('host', 'obz', self.ctx))
+        self.assertTrue(
+            self.api.delete('host', 'obz', self.ctx))
+
+    def test_delete_unknown_entity(self):
+        self.assertRaises(exceptions.NotFound,
+                          self.api.delete,
+                          'noent', 'obz', self.ctx)
+
+    def test_delete_unknown_object(self):
+        self.assertTrue(
+            self.api.delete('host', 'notfound',  self.ctx))
 
     def test_delete_bad_acl(self):
         auth_ctx = acl.AuthContext('bad_user')

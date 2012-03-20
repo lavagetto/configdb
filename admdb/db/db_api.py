@@ -1,5 +1,7 @@
 from admdb import exceptions
+from admdb.db import acl
 from admdb.db import schema
+from admdb.db import validation
 
 
 class AdmDbApi(object):
@@ -7,6 +9,38 @@ class AdmDbApi(object):
     def __init__(self, schema, db):
         self.db = db
         self.schema = schema
+
+    def auth_context_for_user(self, user):
+        """Helper function that, in case you have a 'user' entity,
+        will return an acl.AuthContext for that user."""
+        auth_ctx = acl.AuthContext(user)
+        user_obj = self.db.get_by_name('user', user)
+        if user_obj:
+            auth_ctx.set_self(user_obj)
+        return auth_ctx
+
+    def _validate(self, entity, data):
+        """Perform validation on entity data."""
+        out = {}
+        errors = []
+        input_fields = set(data.keys())
+        for field in entity.fields.itervalues():
+            if field.name not in data:
+                continue
+            try:
+                out[field.name] = field.validate(data[field.name])
+                input_fields.remove(field.name)
+            except validation.Invalid, e:
+                errors.append('%s: %s' % (field.name, e))
+        if input_fields:
+            raise exceptions.ValidationError(
+                'Unknown extra fields for "%s": %s' % (
+                    entity.name, ', '.join(input_fields)))
+        if errors:
+            raise exceptions.ValidationError(
+                'Validation error for "%s": %s' % (
+                    entity.name, ', '.join(errors)))
+        return out
 
     def _diff_object(self, entity, obj, new_data):
         """Returns a list of modified fields."""
@@ -16,7 +50,7 @@ class AdmDbApi(object):
                 continue
             old_value = getattr(obj, field.name)
             new_value = new_data[field.name]
-            if isinstance(field, schema.Relation):
+            if field.is_relation():
                 old_value = set(x.name for x in old_value)
                 new_value = set(new_value or [])
             if old_value != new_value:
@@ -70,7 +104,8 @@ class AdmDbApi(object):
         if not obj:
             raise exceptions.NotFound('%s/%s' % (class_name, object_name))
 
-        diffs = self._diff_object(ent, obj, data)
+        diffs = self._diff_object(ent, obj,
+                                  self._validate(ent, data))
         self._authorize_obj_op(ent, auth_context, 'w', obj, diffs.keys())
         self._apply_diff(ent, obj, diffs)
         return True
@@ -96,7 +131,9 @@ class AdmDbApi(object):
 
         self._authorize_op(ent, auth_context, 'w', None)
         with self.db.session() as session:
-            obj = self.db.create(class_name, data, session)
+            obj = self.db.create(class_name,
+                                 self._validate(ent, data),
+                                 session)
 
         obj = self.db.get_by_name(class_name, data['name'])
         return obj.id

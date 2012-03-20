@@ -71,7 +71,7 @@ class SqlAlchemyDb(base.DbBase):
         for qattr, qvalue in attrs.iteritems():
             classattr = getattr(self._get_class(class_name), qattr)
             field = entity.fields[qattr]
-            if isinstance(field, schema.Relation):
+            if field.is_relation():
                 rel_obj = self.get_by_name(field.remote_name, qvalue)
                 if not rel_obj:
                     raise exceptions.NotFound('%s=%s' % (qattr, qvalue))
@@ -91,7 +91,7 @@ class SqlAlchemyDb(base.DbBase):
         entity = self._schema.get_entity(class_name)
         for k, v in attrs.iteritems():
             field = entity.fields[k]
-            if isinstance(field, schema.Relation):
+            if field.is_relation():
                 rel_attr = getattr(obj, k)
                 for lv in v:
                     rel_obj = self.get_by_name(field.remote_name, lv)

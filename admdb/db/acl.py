@@ -76,7 +76,9 @@ class RuleMatchUserByRelation(AclRule):
             return True
         user_rel_obj = getattr(obj, self.rel_attr)
         self_obj = ctx.get_self()
-        return (self_obj is not None) and (self_obj in user_rel_obj)
+        return ((self_obj is not None)
+                and (user_rel_obj is not None)
+                and (self_obj in user_rel_obj))
 
 
 def _parse_acl_rules(acl_spec):

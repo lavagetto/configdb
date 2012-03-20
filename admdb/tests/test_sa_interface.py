@@ -1,3 +1,4 @@
+from admdb import exceptions
 from admdb.tests import *
 from admdb.db.interface import sa_interface
 
@@ -43,3 +44,12 @@ class TestSaInterface(TestBase):
         r = db.find('host', {'roles': 'role1', 'name': 'obz'}).all()
         self.assertEquals(1, len(r))
         self.assertEquals('obz', r[0].name)
+
+    def test_find_nonexisting_relation(self):
+        db = self.init_db()
+        self.load_some_data(db)
+
+        self.assertRaises(exceptions.NotFound,
+                          db.find,
+                          'host', {'roles': 'zzzz'})
+        

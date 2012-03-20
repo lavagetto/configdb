@@ -18,3 +18,10 @@ class AclError(Error):
 class NotFound(Error):
     pass
 
+
+class RpcError(Error):
+    pass
+
+
+class ValidationError(Error):
+    pass

@@ -72,8 +72,9 @@ class StubObj(acl.AclMixin):
 
 class StubDbObj(object):
 
-    def __init__(self, objid):
+    def __init__(self, objid, parents=None):
         self.id = objid
+        self.parents = parents
 
 
 class AclCheckTest(TestBase):
@@ -109,6 +110,16 @@ class AclCheckTest(TestBase):
         self.assertFalse(
             obj.acl_check(self.ctx, 'r', self.dbobj))
 
+    def test_check_group_ok(self):
+        obj = StubObj({'r': '*', 'w': 'group/admins'})
+        self.assertTrue(
+            obj.acl_check(self.ctx, 'w', self.dbobj))
+
+    def test_check_group_not_ok(self):
+        obj = StubObj({'r': '*', 'w': 'group/admins'})
+        self.assertFalse(
+            obj.acl_check(self.bad_ctx, 'w', self.dbobj))
+
     def test_check_self(self):
         obj = StubObj({'w': '@self'})
         self.ctx.set_self(self.dbobj)
@@ -129,3 +140,16 @@ class AclCheckTest(TestBase):
             obj.acl_check(self.bad_ctx, 'w', self.dbobj))
         self.assertFalse(
             obj.acl_check(self.bad_ctx, 'w', StubDbObj('z')))
+
+    def test_check_user_by_relation(self):
+        obj = StubObj({'w': '@parents'})
+        self_dbobj = StubDbObj('self')
+        dbobj = StubDbObj('cur', [self_dbobj])
+        self.ctx.set_self(self_dbobj)
+
+        self.assertTrue(
+            obj.acl_check(self.ctx, 'w', dbobj))
+
+        self.assertFalse(
+            obj.acl_check(self.ctx, 'w', StubDbObj('other')))
+            

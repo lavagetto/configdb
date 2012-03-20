@@ -12,7 +12,7 @@ class SqlAlchemyGenerator(object):
     def _sa_entity_def(self, entity):
         cols = []
         for field in entity.fields.itervalues():
-            if isinstance(field, schema.Relation):
+            if field.is_relation():
                 cols.append(self._sa_field_relation_def(entity, field))
             else:
                 cols.append(self._sa_field_def(entity, field))
@@ -28,7 +28,7 @@ class %(class_name)s(Base):
     def _sa_entity_aux_tables(self, entity):
         out = []
         for field in entity.fields.itervalues():
-            if isinstance(field, schema.Relation):
+            if field.is_relation():
                 out.append(self._sa_field_assoc_table_def(entity, field))
         return '\n'.join(out)
 
@@ -71,7 +71,7 @@ class %(class_name)s(Base):
     def generate(self):
         out = ['from sqlalchemy import *',
                'from sqlalchemy.orm import *']
-        for ent in self.schema.get_tables().itervalues():
+        for ent in self.schema.get_entities():
             out.append(self._sa_entity_aux_tables(ent))
             out.append(self._sa_entity_def(ent))
         return '\n'.join(out)
