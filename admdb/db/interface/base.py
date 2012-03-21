@@ -6,9 +6,6 @@ class DbBase(object):
     def get_by_name(self, class_name, object_name):
         raise NotImplementedError()
 
-    def get_by_id(self, class_name, object_id):
-        raise NotImplementedError()
-
     def session(self):
         raise NotImplementedError()
 
