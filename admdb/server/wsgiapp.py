@@ -43,14 +43,7 @@ def to_dict(class_name, item):
     if isinstance(item, list):
         return [to_dict(class_name, x) for x in item]
     entity = g.api.schema.get_entity(class_name)
-    out = {}
-    for f in entity.fields.itervalues():
-        value = getattr(item, f.name)
-        if f.is_relation():
-            out[f.name] = [x.name for x in value]
-        else:
-            out[f.name] = value
-    return out
+    return entity.to_net(item)
 
 
 @api_app.before_request

@@ -34,6 +34,13 @@ TEST_SCHEMA = '''
   "name": {
     "type": "string"
   },
+  "last_login": {
+    "type": "datetime"
+  },
+  "enabled": {
+    "type": "bool",
+    "default": "True"
+  },
   "ssh_keys": {
     "type": "relation",
     "rel": "ssh_key",

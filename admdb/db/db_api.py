@@ -20,7 +20,7 @@ class AdmDbApi(object):
         return auth_ctx
 
     def _validate(self, entity, data):
-        """Perform validation on entity data."""
+        """Perform validation on input data."""
         out = {}
         errors = []
         input_fields = set(data.keys())

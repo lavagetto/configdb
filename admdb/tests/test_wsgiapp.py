@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 from admdb.tests import *
 from admdb.server import wsgiapp
 
@@ -20,18 +21,31 @@ class WsgiTest(TestBase):
         with db.session() as s:
             a = db.create('host', {'ip': '1.2.3.4', 'name': 'obz'}, s)
             r = db.create('role', {'name': 'role1'}, s)
+            u = db.create('user', {'name': 'user1',
+                                   'last_login': datetime(2006, 1, 1)}, s)
             a.roles.append(r)
 
-    def test_get_host(self):
-        rv = self.app.get('/get/host/obz')
+    def _parse(self, rv):
         self.assertEquals(200, rv.status_code)
         data = json.loads(rv.data)
         self.assertTrue(data['ok'])
-        result = data['result']
+        return data['result']
+
+    def test_get_host(self):
+        result = self._parse(self.app.get('/get/host/obz'))
         self.assertEquals({'name': 'obz',
                            'ip': '1.2.3.4',
                            'ip6': None,
                            'roles': ['role1']},
+                          result)
+
+    def test_get_user(self):
+        # same as above, with more data types
+        result = self._parse(self.app.get('/get/user/user1'))
+        self.assertEquals({'name': 'user1',
+                           'enabled': True,
+                           'last_login': '2006-01-01T00:00:00',
+                           'ssh_keys': []},
                           result)
 
     def test_create(self):
@@ -40,7 +54,7 @@ class WsgiTest(TestBase):
                            content_type='application/json')
         self.assertEquals(200, rv.status_code)
         data = json.loads(rv.data)
-        self.assertEquals({'ok': True, 'result': True}, data)
+        self.assertEquals({'ok': True, 'result': 2}, data)
 
     def test_update(self):
         rv = self.app.post('/update/host/obz',

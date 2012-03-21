@@ -9,7 +9,8 @@ log = logging.getLogger(__name__)
 
 class Connection(object):
 
-    def __init__(self, url):
+    def __init__(self, url, schema):
+        self._schema = schema
         self._url = url.rstrip('/')
         self._opener = urllib2.build_opener()
 
@@ -26,6 +27,8 @@ class Connection(object):
             self._url,
             '/'.join(urllib.quote(x, '') for x in path))
         if data:
+            entity = self._schema.get_entity(path[1])
+            data = entity.to_net(data, ignore_missing=True)
             log.debug('POST: %s %s', url, data)
             request = urllib2.Request(
                 url,

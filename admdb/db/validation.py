@@ -1,10 +1,21 @@
 import formencode
 from formencode import validators
+from dateutil import parser as dateutil_parser
 
 Invalid = formencode.Invalid
 
+class iso_timestamp_validator(formencode.FancyValidator):
+
+    def _to_python(self, value, state):
+        try:
+            return dateutil_parser.parse(value)
+        except ValueError, e:
+            raise formencode.Invalid(str(e), value, state)
+
+
 _validator_map = {
     'int': validators.Int(),
+    'bool': validators.Bool(),
     'number': validators.Number(),
     'string': validators.UnicodeString(strip=True, not_empty=True),
     'email': validators.Email(resolve_domain=False, not_empty=True),
@@ -12,6 +23,7 @@ _validator_map = {
                           require_tld=False, not_empty=True),
     'ip': validators.IPAddress(),
     'cidr': validators.CIDR(),
+    'iso_timestamp': iso_timestamp_validator(),
     }
 
 

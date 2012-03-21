@@ -103,6 +103,13 @@ class DbApiTest(TestBase):
                           self.api.update,
                           'host', 'obz', {'ip': '299.0.0.1'}, self.ctx)
 
+    def test_update_validation_error_2(self):
+        self.assertRaises(exceptions.ValidationError,
+                          self.api.update,
+                          'user', 'testuser',
+                          {'last_login': 'not_a_valid_iso_timestamp'}, 
+                          self.ctx)
+
     def test_update_unknown_entity_error(self):
         self.assertRaises(exceptions.NotFound,
                           self.api.update,

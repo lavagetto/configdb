@@ -12,7 +12,6 @@ from admdb.db.interface import base
 from admdb.db.interface import sa_generator
 
 
-
 @contextlib.contextmanager
 def unshared_session_manager(sessionmaker):
     s = sessionmaker()

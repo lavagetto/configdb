@@ -32,10 +32,25 @@ class %(class_name)s(Base):
                 out.append(self._sa_field_assoc_table_def(entity, field))
         return '\n'.join(out)
 
+    def _sa_field_type(self, field):
+        type_map = {
+            'datetime': 'DateTime',
+            'bool': 'Boolean',
+            'string': 'Unicode',
+            'text': 'UnicodeText',
+            'binary': 'BLOB',
+            'password': 'String',
+            }
+        type_args = []
+        if 'size' in field.attrs:
+            type_args.append(str(field.attrs['size']))
+        return '%s(%s)' % (type_map[field.type],
+                           ', '.join(type_args))
+
     def _sa_field_def(self, entity, field):
         # Split db attributes from the rest.
         attrs = field.attrs
-        sa_type = field.type.capitalize()
+        sa_type = self._sa_field_type(field)
         sa_attrs = {}
         for sa_attr in ('index', 'unique', 'nullable', 'default'):
             if sa_attr in attrs:
