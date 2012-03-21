@@ -3,6 +3,7 @@ import getpass
 import inflect
 import logging
 import re
+import os
 from admdb.db import schema
 from admdb.client import connection
 
@@ -75,7 +76,7 @@ class UpdateAction(Action):
     name = 'mod'
 
     def __init__(self, entity, parser):
-        parser.add_argument('name')
+        parser.add_argument('_name', metavar='NAME')
         has_relations = None
         for field in entity.fields.itervalues():
             descr = field.attrs.get('description', '')
@@ -83,11 +84,13 @@ class UpdateAction(Action):
                 opt_name = '--%s' % pl.singular_noun(field.name)
                 descr += '%s(use with --add / --delete)' % (
                     ' ' if descr else '')
-                parser.add_argument(opt_name, help=descr)
+                parser.add_argument(opt_name, help=descr,
+                                    dest=field.name)
                 has_relations = True
             else:
                 opt_name = '--%s' % field.name
-                parser.add_argument(opt_name, help=descr)
+                parser.add_argument(opt_name, help=descr,
+                                    dest=field.name)
         if has_relations:
             parser.add_argument('--add', action='store_true')
             parser.add_argument('--delete', action='store_true')
@@ -96,13 +99,18 @@ class UpdateAction(Action):
         if args.add and args.delete:
             raise Exception('Can\'t specify --add and --delete together')
 
-        log.info('update: %s/%s', entity.name, args.name)
-        obj = conn.get(entity.name, args.name)
+        log.info('update: %s/%s', entity.name, args._name)
+        obj = conn.get(entity.name, args._name)
         update_data = {}
         for field in entity.fields.itervalues():
+            value = getattr(args, field.name)
+            if value is None:
+                continue
             if field.is_relation():
-                value = getattr(args, pl.singular_noun(field.name))
-                rel_list = set(getattr(obj, field.name))
+                if not value:
+                    raise Exception('Relational argument "%s" is empty' % (
+                            field.name,))
+                rel_list = set(obj[field.name])
                 if args.add:
                     rel_list.add(value)
                 elif args.delete:
@@ -112,14 +120,13 @@ class UpdateAction(Action):
                                     '--add or --delete')
                 update_data[field.name] = list(rel_list)
             else:
-                value = getattr(args, field.name)
                 # Auto-clear items.
-                if value == '':
+                if not value:
                     value = None
-                update_data[field_name] = value
-        
+                update_data[field.name] = value
+
         log.info('update: %s', update_data)
-        conn.update(entity.name, args.name, update_data)
+        conn.update(entity.name, args._name, update_data)
 
 
 class GetAction(Action):
@@ -128,10 +135,10 @@ class GetAction(Action):
     name = 'get'
 
     def __init__(self, entity, parser):
-        parser.add_argument('name')
+        parser.add_argument('_name', metavar='NAME')
 
     def run(self, conn, entity, args):
-        obj = conn.get(entity.name, args.name)
+        obj = conn.get(entity.name, args._name)
         print obj
 
 
@@ -154,7 +161,7 @@ class DeleteAction(Action):
     name = 'del'
 
     def __init__(self, entity, parser):
-        parser.add_argument('name')
+        parser.add_argument('name', metavar='NAME')
 
     def run(self, conn, entity, args):
         conn.delete(entity.name, args.name)
@@ -209,12 +216,13 @@ class Parser(object):
 def main(args=None):
     logging.basicConfig(level=logging.DEBUG)
 
-    schema_file = '../test.json'
+    schema_file = os.getenv('SCHEMA', './schema.json')
     with open(schema_file, 'r') as fd:
         schema_json = fd.read()
 
     parser = Parser(schema.Schema(schema_json))
     parser.run(args)
+    return 0
 
 
 if __name__ == '__main__':
