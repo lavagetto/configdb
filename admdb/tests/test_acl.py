@@ -53,14 +53,14 @@ class AclParseTest(TestBase):
     def test_parse_acl(self):
         spec = {'r': 'user/admin, group/admins',
                 'w': '@self'}
-        r = acl._parse_acl(spec)
+        r = acl.parse_acl(spec)
         self.assertEquals(set(['r', 'w']), set(r.keys()))
 
     def test_error_extra_attrs(self):
         spec = {'r': '@self',
                 'blah': '42'}
         self.assertRaises(exceptions.SchemaError,
-                          acl._parse_acl,
+                          acl.parse_acl,
                           spec)
 
 

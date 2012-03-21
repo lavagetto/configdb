@@ -151,7 +151,7 @@ class FindAction(Action):
         self.add_standard_entity_fields(entity, parser)
 
     def run(self, conn, entity, args):
-        query = self.get_standard_entity_fields(entity, parser)
+        query = self.get_standard_entity_fields(entity, args)
         objects = conn.find(entity.name, query)
 
 

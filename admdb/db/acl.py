@@ -6,6 +6,13 @@ class AuthContext(object):
 
     Binds together the per-request auth information, so it can be
     evaluated by the ACL rules.
+
+    An AuthContext has the concept of a 'self' object (used to
+    implement the '@self' ACL rule), but it does not enforce any
+    particular schema on it: it is the responsibility of the
+    authentication middleware in the WSGI server to set it to the
+    appropriate object (usually the one representing the logged-in
+    user).
     """
 
     def __init__(self, username, groups=None):
@@ -82,6 +89,7 @@ class RuleMatchUserByRelation(AclRule):
 
 
 def _parse_acl_rules(acl_spec):
+    """Parse a list of ACL rules (comma separated)."""
     if isinstance(acl_spec, basestring):
         acl_spec = acl_spec.split(',')
     acls = []
@@ -104,7 +112,16 @@ def _parse_acl_rules(acl_spec):
     return acls
 
 
-def _parse_acl(acl_dict):
+def parse_acl(acl_dict):
+    """Parse an ACL specification.
+
+    A specification is simply a {operation: acl_rules} dictionary,
+    where the ACL rules are given as a comma-separated list of
+    individual ACL entries. The 'operation' key can be one of 'r' (for
+    read access) or 'w' (for modify / create / delete access).
+
+    The default ACL entry allows any access.
+    """
     acl = {'r': [RuleAny()], 'w': [RuleAny()]}
     for op, spec in acl_dict.iteritems():
         if op not in ('r', 'w'):
@@ -117,7 +134,7 @@ class AclMixin(object):
     """A mixin class providing ACL functionality for an object."""
 
     def set_acl(self, acl_dict=None):
-        self._acl = _parse_acl(acl_dict or {})
+        self._acl = parse_acl(acl_dict or {})
 
     def has_acl(self):
         return hasattr(self, '_acl') and bool(self._acl)

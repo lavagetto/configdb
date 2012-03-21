@@ -85,6 +85,17 @@ class CliTest(mox.MoxTestBase):
             0, cli.main(
                 ['host', 'mod', 'utz', '--ip=2.3.4.5']))
 
+    def test_update_object_clear_attr(self):
+        self._connect()
+        self.conn.get('host', 'utz').AndReturn(
+            {'name': 'utz', 'ip': '1.2.3.4', 'ip6': None, 'roles': []})
+        self.conn.update('host', 'utz', {'ip': None})
+        self.mox.ReplayAll()
+
+        self.assertEquals(
+            0, cli.main(
+                ['host', 'mod', 'utz', '--ip=']))
+
     def test_update_object_add_relation(self):
         self._connect()
         self.conn.get('host', 'utz').AndReturn(
