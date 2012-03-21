@@ -59,9 +59,6 @@ class SqlAlchemyDb(base.DbBase):
         return self._get_class(class_name).query.filter_by(
             name=object_name).first()
 
-    def get_by_id(self, class_name, object_id):
-        return self._get_class(class_name).query.get(object_id)
-
     def find(self, class_name, attrs):
         # Make relational queries work by name.
         classobj = self._get_class(class_name)
