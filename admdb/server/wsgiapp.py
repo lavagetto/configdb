@@ -7,6 +7,7 @@ from admdb import exceptions
 from admdb.db import schema
 from admdb.db import db_api
 from admdb.db.interface import sa_interface
+from admdb.server import auth
 
 log = logging.getLogger(__name__)
 api_app = Blueprint('admdb', __name__)
@@ -67,27 +68,7 @@ def to_dict(class_name, item):
 #   A function that is called on every request, with the auth token
 #   as argument. It is supposed to return an instance of acl.AuthContext
 #   initialized with the proper authentication context data.
-#
-# The default authentication functions assume that a 'user' entity
-# exists in your schema with a 'password' field, and it will attempt
-# to authenticate against it using crypt()-encrypted passwords.
 
-def default_auth_fn(api, data):
-    username = data.get('username')
-    password = data.get('password')
-    if username and password:
-        user_obj = api.db.get_by_name('user', username)
-        if (user_obj and 
-            crypt.crypt(password, user_obj.password) == user_obj.password):
-            return username
-
-
-def default_auth_context_fn(username):
-    user_obj = api.db.get_by_name('user', username)
-    if user_obj:
-        ctx = acl.AuthContext(username)
-        ctx.set_self(user_obj)
-        return ctx
 
 
 @api_app.before_request
@@ -102,9 +83,8 @@ def authenticate(fn):
             or (session.get('auth_ok') != True)
             or not session.get('auth_token')):
             abort(403)
-        auth_ctx_fn = current_app.config.get('AUTH_CONTEXT_FN',
-                                             default_auth_context_fn)
-        g.auth_ctx = auth_ctx_fn(session['auth_token'])
+        auth_ctx_fn = current_app.config['AUTH_CONTEXT_FN']
+        g.auth_ctx = auth_ctx_fn(g.api, session['auth_token'])
         return fn(*args, **kwargs)
     return _auth_wrapper
 
@@ -113,7 +93,7 @@ def authenticate(fn):
 @json_request
 @json_response
 def login():
-    auth_fn = current_app.config.get('AUTH_FN', default_auth_fn)
+    auth_fn = current_app.config['AUTH_FN']
     auth_token = auth_fn(g.api, g.request_data)
     if not auth_token:
         raise exceptions.AuthError('Authentication error')
@@ -177,16 +157,24 @@ def make_app(config={}):
     app.config.update(config)
     app.register_blueprint(api_app)
 
-    # Initialize admdb from config.
+    # Initialize admdb configuration.
     if 'SCHEMA_FILE' not in app.config:
         raise Exception('SCHEMA_FILE undefined!')
+    if 'AUTH_FN' not in app.config:
+        app.config['AUTH_FN'] = auth.user_auth_fn()
+    if 'AUTH_CONTEXT_FN' not in app.config:
+        app.config['AUTH_CONTEXT_FN'] = auth.user_auth_context_fn()
+
+    # Read schema from the schema file.
     with open(app.config['SCHEMA_FILE'], 'r') as fd:
         app.config['SCHEMA_JSON'] = fd.read()
-        schema_obj = schema.Schema(app.config['SCHEMA_JSON'])
-        db = sa_interface.SqlAlchemyDb(
-            app.config.get('DB_URI', 'sqlite:///:memory:'),
-            schema_obj)
-        app.api = db_api.AdmDbApi(schema_obj, db)
+
+    # Initialize the database interface.
+    schema_obj = schema.Schema(app.config['SCHEMA_JSON'])
+    db = sa_interface.SqlAlchemyDb(
+        app.config.get('DB_URI', 'sqlite:///:memory:'),
+        schema_obj)
+    app.api = db_api.AdmDbApi(schema_obj, db)
 
     return app
 

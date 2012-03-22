@@ -10,15 +10,6 @@ class AdmDbApi(object):
         self.db = db
         self.schema = schema
 
-    def auth_context_for_user(self, user):
-        """Helper function that, in case you have a 'user' entity,
-        will return an acl.AuthContext for that user."""
-        auth_ctx = acl.AuthContext(user)
-        user_obj = self.db.get_by_name('user', user)
-        if user_obj:
-            auth_ctx.set_self(user_obj)
-        return auth_ctx
-
     def _validate(self, entity, data):
         """Perform validation on input data."""
         out = {}
@@ -91,11 +82,12 @@ class AdmDbApi(object):
                 setattr(obj, field_name, new_value)
 
     def _authorize_obj_op(self, entity, auth_context, op, obj, fields):
+        """Authorize an operation on an instance."""
+        base_acl_check = entity.acl_check(auth_context, op, obj)
         for field_name in fields:
             field = entity.fields[field_name]
-            if ((field.has_acl()
-                 and not field.acl_check(auth_context, op, obj))
-                or not entity.acl_check(auth_context, op, obj)):
+            if not (field.acl_check(auth_context, op, obj)
+                    or base_acl_check):
                 raise exceptions.AclError(
                     'unauthorized change to %s.%s' % (
                         entity.name, field_name))

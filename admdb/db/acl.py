@@ -134,7 +134,7 @@ class AclMixin(object):
     """A mixin class providing ACL functionality for an object."""
 
     def set_acl(self, acl_dict=None):
-        self._acl = parse_acl(acl_dict or {})
+        self._acl = parse_acl(acl_dict) if acl_dict else None
 
     def has_acl(self):
         return hasattr(self, '_acl') and bool(self._acl)

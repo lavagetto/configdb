@@ -66,6 +66,7 @@ class Relation(Field):
     def __init__(self, entity, name, attrs):
         self.local_name = entity.name
         self.remote_name = attrs.pop('rel')
+        attrs['validator'] = 'relation'
         Field.__init__(self, entity, name, attrs)
 
     def is_relation(self):

@@ -2,12 +2,19 @@ import json
 import os
 from werkzeug.exceptions import Forbidden
 from datetime import datetime
+from admdb.db import acl
 from admdb.tests import *
 from admdb.server import wsgiapp
 
 
-def authenticate_admin(api, username, password):
-    return (username == 'admin' and password == 'admin')
+def auth_fn(api, data):
+    username = data.get('username')
+    password = data.get('password')
+    if username == 'admin' and password == 'admin':
+        return username
+
+def auth_context_fn(api, auth_token):
+    return acl.AuthContext(auth_token)
 
 
 @wsgiapp.api_app.route('/raise_exception')
@@ -28,7 +35,8 @@ class WsgiTest(TestBase):
 
         app = wsgiapp.make_app({'SCHEMA_FILE': self.schema_file})
         app.config['TESTING'] = True
-        app.config['AUTH_FN'] = authenticate_admin
+        app.config['AUTH_FN'] = auth_fn
+        app.config['AUTH_CONTEXT_FN'] = auth_context_fn
         app.config['SECRET_KEY'] = 'test key'
         self.app = app.test_client()
 

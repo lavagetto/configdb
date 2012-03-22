@@ -4,9 +4,19 @@ from formencode import validators
 Invalid = formencode.Invalid
 
 
+class RelationValidator(formencode.FancyValidator):
+
+    def _to_python(self, value, state):
+        if (value is None or
+            (isinstance(value, list) and
+             (not value or isinstance(value[0], basestring)))):
+            return value
+        raise Invalid('relation not a list of strings', value, state)
+
+
 _validator_map = {
     'int': validators.Int(),
-    'bool': validators.Bool(),
+    'bool': validators.StringBool(),
     'number': validators.Number(),
     'string': validators.UnicodeString(strip=True, not_empty=True),
     'email': validators.Email(resolve_domain=False, not_empty=True),
@@ -14,7 +24,7 @@ _validator_map = {
                           require_tld=False, not_empty=True),
     'ip': validators.IPAddress(),
     'cidr': validators.CIDR(),
-    #'iso_timestamp': iso_timestamp_validator(),
+    'relation': RelationValidator(),
     }
 
 

@@ -47,6 +47,11 @@ class DbApiTest(TestBase):
         self.assertEquals(1, len(result))
         self.assertEquals('obz', result[0].name)
 
+    def test_find_nonexisting_entity_raises_notfound(self):
+        self.assertRaises(exceptions.NotFound,
+                          self.api.find,
+                          'noent', {'name': 'blah'}, self.ctx)
+
     def test_create_simple(self):
         host_data = {'name': 'utz', 'ip': '2.3.4.5'}
         result = self.api.create('host', host_data, self.ctx)
@@ -109,6 +114,11 @@ class DbApiTest(TestBase):
                           self.api.update,
                           'host', 'obz', {'ip': '299.0.0.1'}, self.ctx)
 
+    def test_update_validation_error_on_relation(self):
+        self.assertRaises(exceptions.ValidationError,
+                          self.api.update,
+                          'host', 'obz', {'roles': 'not_a_list'}, self.ctx)
+
     def test_update_validation_error_in_deserialization(self):
         self.assertRaises(exceptions.ValidationError,
                           self.api.update,
@@ -170,6 +180,7 @@ class DbApiTest(TestBase):
 
     def test_self_acl(self):
         testuser = self.db.get_by_name('user', 'testuser')
+        print 'ID:', testuser.id
         auth_ctx = acl.AuthContext(testuser.name)
         auth_ctx.set_self(testuser)
 

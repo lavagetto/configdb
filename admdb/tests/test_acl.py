@@ -87,7 +87,7 @@ class AclCheckTest(TestBase):
 
     def test_check_default(self):
         obj = StubObj({})
-        self.assertTrue(
+        self.assertFalse(
             obj.acl_check(self.ctx, 'r', self.dbobj))
 
     def test_check_any_ok(self):
