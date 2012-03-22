@@ -1,4 +1,5 @@
 from admdb import exceptions
+from admdb.db import acl
 from admdb.db import schema
 from admdb.tests import *
 from datetime import datetime
@@ -209,3 +210,114 @@ class SchemaSerializationTest(TestBase):
         self.assertRaises(
             ValueError,
             self.ent.from_net, data)
+
+
+class SchemaAclTest(TestBase):
+
+    def test_default_acl(self):
+        data = """
+{
+"ent": {
+  "name": {
+    "type": "string"
+  }
+}
+}
+"""
+        sch = schema.Schema(data)
+        ent = sch.get_entity('ent')
+
+        sch.acl_check_entity(
+            ent, acl.AuthContext('admin'), 'r', None)
+        sch.acl_check_entity(
+            ent, acl.AuthContext('admin'), 'w', None)
+        sch.acl_check_entity(
+            ent, acl.AuthContext('testuser'), 'r', None)
+        sch.acl_check_entity(
+            ent, acl.AuthContext('testuser'), 'w', None)
+
+    def test_entity_acl(self):
+        data = """
+{
+"ent": {
+  "name": {
+    "type": "string"
+  },
+  "_acl": {
+    "r": "*", "w": "user/admin"
+  }
+}
+}
+"""
+        sch = schema.Schema(data)
+        ent = sch.get_entity('ent')
+
+        sch.acl_check_entity(
+            ent, acl.AuthContext('admin'), 'w', None)
+        sch.acl_check_entity(
+            ent, acl.AuthContext('testuser'), 'r', None)
+
+        self.assertRaises(
+            exceptions.AclError,
+            sch.acl_check_entity,
+            ent, acl.AuthContext('testuser'), 'w', None)
+
+    def test_field_acl_takes_precedence(self):
+        data = """
+{
+"ent": {
+  "name": {
+    "type": "string",
+    "acl": {"r": "*", "w": "user/admin"}
+  },
+  "_acl": {
+    "r": "*", "w": "user/testuser"
+  }
+}
+}
+"""
+        sch = schema.Schema(data)
+        ent = sch.get_entity('ent')
+
+        sch.acl_check_fields(
+            ent, ['name'],
+            acl.AuthContext('admin'),
+            'w', None)
+
+        self.assertRaises(
+            exceptions.AclError,
+            sch.acl_check_fields,
+            ent, ['name'],
+            acl.AuthContext('testuser'),
+            'w', None)
+
+    def test_single_failure_will_abort(self):
+        data = """
+{
+"ent": {
+  "name": {
+    "type": "string",
+    "acl": {"w": "user/admin"}
+  },
+  "role": {
+    "type": "string",
+    "acl": {"w": "*"}
+  }
+}
+}
+"""
+        sch = schema.Schema(data)
+        ent = sch.get_entity('ent')
+
+        sch.acl_check_fields(
+            ent, ['name', 'role'],
+            acl.AuthContext('admin'),
+            'w', None)
+
+        self.assertRaises(
+            exceptions.AclError,
+            sch.acl_check_fields,
+            ent, ['name', 'role'],
+            acl.AuthContext('testuser'),
+            'w', None)
+

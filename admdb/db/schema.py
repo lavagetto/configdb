@@ -192,16 +192,22 @@ class Schema(object):
             else self.default_acl.acl_check(auth_context, op, obj))
         for field_name in fields:
             field = entity.fields[field_name]
-            if not ((field.has_acl() 
-                     and field.acl_check(auth_context, op, obj))
-                    or base_acl_check):
+            acl_check = (
+                field.acl_check(auth_context, op, obj)
+                if field.has_acl()
+                else base_acl_check)
+            if not acl_check:
                 raise exceptions.AclError(
                     'unauthorized change to %s.%s' % (
                         entity.name, field_name))
 
     def acl_check_entity(self, entity, auth_context, op, obj):
         """Authorize an operation on an entity."""
-        if not entity.acl_check(auth_context, op, obj):
+        acl_check = (
+            entity.acl_check(auth_context, op, obj)
+            if entity.has_acl()
+            else self.default_acl.acl_check(auth_context, op, obj))
+        if not acl_check:
             raise exceptions.AclError(
                 'unauthorized change to %s' % (
                     entity.name,))
