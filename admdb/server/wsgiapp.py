@@ -52,6 +52,44 @@ def to_dict(class_name, item):
 # cookie is present, we return a status of 403. The client is supposed
 # to request a login session with username and password at the /login
 # URL endpoint.
+#
+# The authentication support is fully modular, two hooks are provided
+# to support different authentication behaviors than the default:
+#
+# app.config['AUTH_FN']
+#   A function that gets called with on /login, with the request data
+#   dictionary as its argument. It should authenticate the credentials
+#   and return an authentication token if the authentication was
+#   successful, or None otherwise. The returned auth token will be
+#   saved in the client session and passed to the AUTH_CONTEXT_FN.
+#
+# app.config['AUTH_CONTEXT_FN']
+#   A function that is called on every request, with the auth token
+#   as argument. It is supposed to return an instance of acl.AuthContext
+#   initialized with the proper authentication context data.
+#
+# The default authentication functions assume that a 'user' entity
+# exists in your schema with a 'password' field, and it will attempt
+# to authenticate against it using crypt()-encrypted passwords.
+
+def default_auth_fn(api, data):
+    username = data.get('username')
+    password = data.get('password')
+    if username and password:
+        user_obj = api.db.get_by_name('user', username)
+        if (user_obj and 
+            crypt.crypt(password, user_obj.password) == user_obj.password):
+            return username
+
+
+def default_auth_context_fn(username):
+    user_obj = api.db.get_by_name('user', username)
+    if user_obj:
+        ctx = acl.AuthContext(username)
+        ctx.set_self(user_obj)
+        return ctx
+
+
 @api_app.before_request
 def set_api():
     g.api = current_app.api
@@ -62,10 +100,11 @@ def authenticate(fn):
     def _auth_wrapper(*args, **kwargs):
         if (session.new
             or (session.get('auth_ok') != True)
-            or not session.get('user')):
+            or not session.get('auth_token')):
             abort(403)
-        username = session['user']
-        g.auth_ctx = g.api.auth_context_for_user(username)
+        auth_ctx_fn = current_app.config.get('AUTH_CONTEXT_FN',
+                                             default_auth_context_fn)
+        g.auth_ctx = auth_ctx_fn(session['auth_token'])
         return fn(*args, **kwargs)
     return _auth_wrapper
 
@@ -74,14 +113,13 @@ def authenticate(fn):
 @json_request
 @json_response
 def login():
-    username = g.request_data.get('username')
-    password = g.request_data.get('password')
-    auth_fn = current_app.config['AUTH_FN']
-    if not auth_fn(g.api, username, password):
+    auth_fn = current_app.config.get('AUTH_FN', default_auth_fn)
+    auth_token = auth_fn(g.api, g.request_data)
+    if not auth_token:
         raise exceptions.AuthError('Authentication error')
 
     session['auth_ok'] = True
-    session['user'] = username
+    session['auth_token'] = auth_token
     return True
 
 
