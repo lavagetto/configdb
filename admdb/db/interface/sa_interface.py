@@ -46,7 +46,7 @@ class SqlAlchemyDb(base.DbBase):
         Base.metadata.create_all(self.engine)
         
     def _load_schema(self):
-        schema_file = os.path.join(self._schema_dir, '_admdb_schema.py')
+        schema_file = os.path.join(self._schema_dir, '_db_schema.py')
         schema_gen = sa_generator.SqlAlchemyGenerator(self._schema)
         with open(schema_file, 'w') as fd:
             fd.write(schema_gen.generate())
