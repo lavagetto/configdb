@@ -52,20 +52,20 @@ class SqlAlchemyDb(base.DbBase):
             fd.write(schema_gen.generate())
         execfile(schema_file, self._objs)
 
-    def _get_class(self, class_name):
-        return self._objs[class_name.capitalize()]
+    def _get_class(self, entity_name):
+        return self._objs[entity_name.capitalize()]
 
-    def get_by_name(self, class_name, object_name):
-        return self._get_class(class_name).query.filter_by(
+    def get_by_name(self, entity_name, object_name):
+        return self._get_class(entity_name).query.filter_by(
             name=object_name).first()
 
-    def find(self, class_name, attrs):
+    def find(self, entity_name, attrs):
         # Make relational queries work by name.
-        classobj = self._get_class(class_name)
-        entity = self._schema.get_entity(class_name)
+        classobj = self._get_class(entity_name)
+        entity = self._schema.get_entity(entity_name)
         query = classobj.query
         for qattr, qvalue in attrs.iteritems():
-            classattr = getattr(self._get_class(class_name), qattr)
+            classattr = getattr(classobj, qattr)
             field = entity.fields[qattr]
             if field.is_relation():
                 rel_obj = self.get_by_name(field.remote_name, qvalue)
@@ -79,12 +79,12 @@ class SqlAlchemyDb(base.DbBase):
     def session(self):
         return unshared_session_manager(self.Session)
 
-    def delete(self, class_name, object_name, session):
-        session.delete(self.get_by_name(class_name, object_name))
+    def delete(self, entity_name, object_name, session):
+        session.delete(self.get_by_name(entity_name, object_name))
 
-    def create(self, class_name, attrs, session):
-        obj = self._get_class(class_name)()
-        entity = self._schema.get_entity(class_name)
+    def create(self, entity_name, attrs, session):
+        obj = self._get_class(entity_name)()
+        entity = self._schema.get_entity(entity_name)
         for k, v in attrs.iteritems():
             field = entity.fields[k]
             if field.is_relation():

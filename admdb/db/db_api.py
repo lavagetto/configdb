@@ -5,6 +5,7 @@ from admdb.db import validation
 
 
 class AdmDbApi(object):
+    """High-level interface to the database."""
 
     def __init__(self, schema, db):
         self.db = db
@@ -64,7 +65,7 @@ class AdmDbApi(object):
             field = entity.fields[field_name]
             old_value, new_value = diffpair
             if isinstance(old_value, set):
-                remote_class_name = field.remote_name
+                remote_entity_name = field.remote_name
                 to_add = new_value - old_value
                 to_remove = old_value - new_value
                 relation = getattr(obj, field_name)
@@ -81,14 +82,15 @@ class AdmDbApi(object):
             else:
                 setattr(obj, field_name, new_value)
 
-    def update(self, class_name, object_name, data, auth_context):
-        ent = self.schema.get_entity(class_name)
+    def update(self, entity_name, object_name, data, auth_context):
+        """Update an existing instance."""
+        ent = self.schema.get_entity(entity_name)
         if not ent:
-            raise exceptions.NotFound(class_name)
+            raise exceptions.NotFound(entity_name)
 
-        obj = self.db.get_by_name(class_name, object_name)
+        obj = self.db.get_by_name(entity_name, object_name)
         if not obj:
-            raise exceptions.NotFound('%s/%s' % (class_name, object_name))
+            raise exceptions.NotFound('%s/%s' % (entity_name, object_name))
 
         diffs = self._diff_object(
             ent, obj, self._validate(ent, data))
@@ -97,50 +99,54 @@ class AdmDbApi(object):
         self._apply_diff(ent, obj, diffs)
         return True
 
-    def delete(self, class_name, object_name, auth_context):
-        ent = self.schema.get_entity(class_name)
+    def delete(self, entity_name, object_name, auth_context):
+        """Delete an instance."""
+        ent = self.schema.get_entity(entity_name)
         if not ent:
-            raise exceptions.NotFound(class_name)
+            raise exceptions.NotFound(entity_name)
 
-        obj = self.db.get_by_name(class_name, object_name)
+        obj = self.db.get_by_name(entity_name, object_name)
         if not obj:
             return True
 
         self.schema.acl_check_entity(ent, auth_context, 'w', obj)
         with self.db.session() as session:
-            self.db.delete(class_name, object_name, session)
+            self.db.delete(entity_name, object_name, session)
         return True
 
-    def create(self, class_name, data, auth_context):
-        ent = self.schema.get_entity(class_name)
+    def create(self, entity_name, data, auth_context):
+        """Create a new instance."""
+        ent = self.schema.get_entity(entity_name)
         if not ent:
-            raise exceptions.NotFound(class_name)
+            raise exceptions.NotFound(entity_name)
 
         self.schema.acl_check_entity(ent, auth_context, 'w', None)
         with self.db.session() as session:
-            obj = self.db.create(class_name,
+            obj = self.db.create(entity_name,
                                  self._validate(ent, data),
                                  session)
 
-        obj = self.db.get_by_name(class_name, data['name'])
+        obj = self.db.get_by_name(entity_name, data['name'])
         return obj.id
 
-    def get(self, class_name, object_name, auth_context):
-        ent = self.schema.get_entity(class_name)
+    def get(self, entity_name, object_name, auth_context):
+        """Return a specific instance."""
+        ent = self.schema.get_entity(entity_name)
         if not ent:
-            raise exceptions.NotFound(class_name)
+            raise exceptions.NotFound(entity_name)
 
-        obj = self.db.get_by_name(class_name, object_name)
+        obj = self.db.get_by_name(entity_name, object_name)
         if not obj:
-            raise exceptions.NotFound('%s/%s' % (class_name, object_name))
+            raise exceptions.NotFound('%s/%s' % (entity_name, object_name))
 
         self.schema.acl_check_entity(ent, auth_context, 'r', obj)
         return obj
 
-    def find(self, class_name, query, auth_context):
-        ent = self.schema.get_entity(class_name)
+    def find(self, entity_name, query, auth_context):
+        """Find all instances matching a query."""
+        ent = self.schema.get_entity(entity_name)
         if not ent:
-            raise exceptions.NotFound(class_name)
+            raise exceptions.NotFound(entity_name)
 
         self.schema.acl_check_entity(ent, auth_context, 'r', None)
-        return self.db.find(class_name, query).all()
+        return self.db.find(entity_name, query).all()
