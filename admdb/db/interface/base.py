@@ -4,17 +4,24 @@ class DbBase(object):
     """A generic interface to a database."""
 
     def get_by_name(self, class_name, object_name):
-        raise NotImplementedError()
+        """Return an instance of an entity, by name."""
 
     def session(self):
-        raise NotImplementedError()
+        """Return a session object.
+
+        This object must be passed to the create() and delete()
+        methods. Furthermore, it must implement an add() method which,
+        when given a database object as returned by get_by_name(),
+        will take care of saving the changes to the object in the
+        database.
+        """
 
     def find(self, class_name, attrs):
-        raise NotImplementedError()
+        """Query an entity according to an attribute-wise query."""
 
     def delete(self, class_name, object_name, session):
-        raise NotImplementedError()
+        """Delete an instance."""
 
     def create(self, class_name, attrs, session):
-        raise NotImplementedError()
+        """Create a new instance of an entity."""
 

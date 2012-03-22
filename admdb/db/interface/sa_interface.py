@@ -29,8 +29,8 @@ class SqlAlchemyDb(base.DbBase):
 
     def __init__(self, uri, schema, schema_dir=None):
 
-        self.Session = scoped_session(sessionmaker(autocommit=False,
-                                      autoflush=False))
+        self.Session = scoped_session(
+            sessionmaker(autocommit=False, autoflush=False))
         Base = declarative_base()
         Base.query = self.Session.query_property()
 
