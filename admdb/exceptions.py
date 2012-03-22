@@ -25,3 +25,7 @@ class RpcError(Error):
 
 class ValidationError(Error):
     pass
+
+
+class AuthError(Error):
+    pass

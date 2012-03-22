@@ -1,5 +1,6 @@
 import json
 import re
+from dateutil import parser as dateutil_parser
 from admdb.db import acl
 from admdb.db import validation
 from admdb import exceptions
@@ -9,7 +10,16 @@ FIELD_NAME_PATTERN = re.compile(r'^[a-z][-_a-z0-9]*$')
 
 
 class Field(acl.AclMixin, validation.ValidatorMixin):
-    """A generic field of our schema."""
+    """A generic field of our schema.
+
+    Complex fields that aren't directly supported by the network
+    transport encoding (JSON) can inherit from this class and
+    implement serialization using the to_net() / from_net() methods.
+
+    When implementing serialization, take care of passing through the
+    None value unchanged, as it has a special meaning (missing value).
+    Also, if serialization fails, try to raise ValueError.
+    """
 
     def __init__(self, entity, name, attrs):
         self.set_acl(attrs.pop('acl', None))
@@ -25,6 +35,8 @@ class Field(acl.AclMixin, validation.ValidatorMixin):
         """Convert value for this field to net format."""
         return value
 
+    from_net = to_net
+
 
 class BoolField(Field):
 
@@ -34,16 +46,15 @@ class BoolField(Field):
         Field.__init__(self, entity, name, attrs)
 
 
-class DateField(Field):
-
-    def __init__(self, entity, name, attrs):
-        # Force a specific validator.
-        attrs['validator'] = 'iso_timestamp'
-        Field.__init__(self, entity, name, attrs)
+class DateTimeField(Field):
 
     def to_net(self, value):
         if value:
             return value.isoformat()
+
+    def from_net(self, value):
+        if value:
+            return dateutil_parser.parse(value)
 
 
 class Relation(Field):
@@ -78,7 +89,7 @@ TYPE_MAP = {
     'binary': Field,
     'int': Field,
     'bool': BoolField,
-    'datetime': DateField,
+    'datetime': DateTimeField,
     'relation': Relation,
     }
 
@@ -125,6 +136,12 @@ class Entity(acl.AclMixin):
                     attr_getter(item, field.name)))
             for field in self.fields.itervalues()
             if not (ignore_missing and attr_getter(item, field.name) is None))
+
+    def from_net(self, data):
+        return dict(
+            (field.name, field.from_net(data[field.name]))
+            for field in self.fields.itervalues()
+            if field.name in data)
 
 
 class Schema(object):

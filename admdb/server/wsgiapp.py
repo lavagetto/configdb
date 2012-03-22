@@ -1,7 +1,9 @@
 import functools
 import json
 import logging
-from flask import Flask, Blueprint, request, jsonify, current_app, abort, g
+from flask import Flask, Blueprint, request, jsonify, current_app, \
+    session, abort, g
+from admdb import exceptions
 from admdb.db import schema
 from admdb.db import db_api
 from admdb.db.interface import sa_interface
@@ -46,17 +48,45 @@ def to_dict(class_name, item):
     return entity.to_net(item)
 
 
+# Authentication works like a standard web app: if no signed session
+# cookie is present, we return a status of 403. The client is supposed
+# to request a login session with username and password at the /login
+# URL endpoint.
 @api_app.before_request
-def set_auth_context():
+def set_api():
     g.api = current_app.api
-    if current_app.config.get('TESTING'):
-        user_name = 'admin'
-    else:
-        user_name = request.environ.get('REMOTE_USER')
-    g.auth_ctx = g.api.auth_context_for_user(user_name)
+
+
+def authenticate(fn):
+    @functools.wraps(fn)
+    def _auth_wrapper(*args, **kwargs):
+        if (session.new
+            or (session.get('auth_ok') != True)
+            or not session.get('user')):
+            abort(403)
+        username = session['user']
+        g.auth_ctx = g.api.auth_context_for_user(username)
+        return fn(*args, **kwargs)
+    return _auth_wrapper
+
+
+@api_app.route('/login', methods=['POST'])
+@json_request
+@json_response
+def login():
+    username = g.request_data.get('username')
+    password = g.request_data.get('password')
+    auth_fn = current_app.config['AUTH_FN']
+    if not auth_fn(g.api, username, password):
+        raise exceptions.AuthError('Authentication error')
+
+    session['auth_ok'] = True
+    session['user'] = username
+    return True
 
 
 @api_app.route('/create/<class_name>', methods=['POST'])
+@authenticate
 @json_request
 @json_response
 def create(class_name):
@@ -64,6 +94,7 @@ def create(class_name):
 
 
 @api_app.route('/get/<class_name>/<object_name>')
+@authenticate
 @json_response
 def get(class_name, object_name):
     return to_dict(class_name,
@@ -71,6 +102,7 @@ def get(class_name, object_name):
 
 
 @api_app.route('/update/<class_name>/<object_name>', methods=['POST'])
+@authenticate
 @json_request
 @json_response
 def update(class_name, object_name):
@@ -78,6 +110,7 @@ def update(class_name, object_name):
 
 
 @api_app.route('/find/<class_name>', methods=['POST'])
+@authenticate
 @json_request
 @json_response
 def find(class_name):
@@ -85,14 +118,15 @@ def find(class_name):
                    g.api.find(class_name, g.request_data, g.auth_ctx))
 
 
-@api_app.route('/delete/<class_name>/<object_name>', methods=['POST'])
+@api_app.route('/delete/<class_name>/<object_name>')
+@authenticate
 @json_response
 def delete(class_name, object_name):
     return g.api.delete(class_name, object_name, g.auth_ctx)
 
 
 @api_app.route('/schema')
-@json_response
+@authenticate
 def get_schema():
     return current_app.config['SCHEMA_JSON']
 

@@ -24,6 +24,15 @@ class AdmDbApi(object):
         out = {}
         errors = []
         input_fields = set(data.keys())
+
+        # First, deserialize the input data.
+        try:
+            data = entity.from_net(data)
+        except ValueError, e:
+            raise exceptions.ValidationError(
+                'Validation error in deserialization: %s' % str(e))
+
+        # Now perform validation on all fields.
         for field in entity.fields.itervalues():
             if field.name not in data:
                 continue
@@ -32,14 +41,16 @@ class AdmDbApi(object):
                 input_fields.remove(field.name)
             except validation.Invalid, e:
                 errors.append('%s: %s' % (field.name, e))
-        if input_fields:
-            raise exceptions.ValidationError(
-                'Unknown extra fields for "%s": %s' % (
-                    entity.name, ', '.join(input_fields)))
+        # If there have been any errors, raise a ValidationError.
         if errors:
             raise exceptions.ValidationError(
                 'Validation error for "%s": %s' % (
                     entity.name, ', '.join(errors)))
+        # Complain about extra fields.
+        if input_fields:
+            raise exceptions.ValidationError(
+                'Unknown extra fields for "%s": %s' % (
+                    entity.name, ', '.join(input_fields)))
         return out
 
     def _diff_object(self, entity, obj, new_data):

@@ -184,3 +184,28 @@ class SchemaSerializationTest(TestBase):
              'stamp': '2006-01-01T00:00:00'},
             self.ent.to_net(obj))
 
+    def test_deserialization(self):
+        data = {'name': 'a',
+                'roles': ['role1', 'role2'],
+                'stamp': '2006-01-01T00:00:00'}
+        self.assertEquals(
+            {'name': 'a',
+             'roles': ['role1', 'role2'],
+             'stamp': datetime(2006, 1, 1)},
+            self.ent.from_net(data))
+
+    def test_deserialization_none(self):
+        data = {'name': None,
+                'roles': [],
+                'stamp': None}
+        self.assertEquals(
+            {'name': None,
+             'roles': [],
+             'stamp': None},
+            self.ent.from_net(data))
+
+    def test_deserialization_error(self):
+        data = {'stamp': 'not-a-timestamp'}
+        self.assertRaises(
+            ValueError,
+            self.ent.from_net, data)

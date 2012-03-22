@@ -1,8 +1,21 @@
 import json
 import os
+from werkzeug.exceptions import Forbidden
 from datetime import datetime
 from admdb.tests import *
 from admdb.server import wsgiapp
+
+
+def authenticate_admin(api, username, password):
+    return (username == 'admin' and password == 'admin')
+
+
+@wsgiapp.api_app.route('/raise_exception')
+@wsgiapp.authenticate
+@wsgiapp.json_request
+@wsgiapp.json_response
+def raise_exception():
+    raise Exception('test exception')
 
 
 class WsgiTest(TestBase):
@@ -15,6 +28,8 @@ class WsgiTest(TestBase):
 
         app = wsgiapp.make_app({'SCHEMA_FILE': self.schema_file})
         app.config['TESTING'] = True
+        app.config['AUTH_FN'] = authenticate_admin
+        app.config['SECRET_KEY'] = 'test key'
         self.app = app.test_client()
 
         db = app.api.db
@@ -31,7 +46,28 @@ class WsgiTest(TestBase):
         self.assertTrue(data['ok'])
         return data['result']
 
+    def _login(self):
+        rv = self.app.post('/login',
+                           data=json.dumps({'username': 'admin',
+                                            'password': 'admin'}),
+                           content_type='application/json')
+        self.assertEquals(200, rv.status_code)
+
+    def test_unauthenticated_request(self):
+        rv = self.app.get('/get/host/obz')
+        self.assertEquals(403, rv.status_code)
+
+    def test_wrap_exceptions(self):
+        self._login()
+        rv = self.app.get('/raise_exception')
+        self.assertEquals(200, rv.status_code)
+        data = json.loads(rv.data)
+        self.assertEquals(
+            {'ok': False, 'error': 'test exception'},
+            data)
+
     def test_get_host(self):
+        self._login()
         result = self._parse(self.app.get('/get/host/obz'))
         self.assertEquals({'name': 'obz',
                            'ip': '1.2.3.4',
@@ -41,14 +77,17 @@ class WsgiTest(TestBase):
 
     def test_get_user(self):
         # same as above, with more data types
+        self._login()
         result = self._parse(self.app.get('/get/user/user1'))
         self.assertEquals({'name': 'user1',
                            'enabled': True,
+                           'password': None,
                            'last_login': '2006-01-01T00:00:00',
                            'ssh_keys': []},
                           result)
 
     def test_create(self):
+        self._login()
         rv = self.app.post('/create/user',
                            data=json.dumps({'name': 'testuser'}),
                            content_type='application/json')
@@ -56,7 +95,21 @@ class WsgiTest(TestBase):
         data = json.loads(rv.data)
         self.assertEquals({'ok': True, 'result': 2}, data)
 
+    def test_require_json_content_type_on_post(self):
+        self._login()
+        rv = self.app.post('/create/user',
+                           data=json.dumps({'name': 'testuser'}))
+        self.assertEquals(400, rv.status_code)
+
+    def test_json_decoding_error(self):
+        self._login()
+        rv = self.app.post('/create/user',
+                           data='definitely { not json;',
+                           content_type='application/json')
+        self.assertEquals(400, rv.status_code)
+
     def test_update(self):
+        self._login()
         rv = self.app.post('/update/host/obz',
                            data=json.dumps({'name': 'obz',
                                             'ip': '2.3.4.5'}),
@@ -66,6 +119,7 @@ class WsgiTest(TestBase):
         self.assertEquals({'ok': True, 'result': True}, data)
 
     def test_find(self):
+        self._login()
         rv = self.app.post('/find/host',
                            data=json.dumps({'name': 'obz',
                                             'roles': 'role1'}),
@@ -77,3 +131,34 @@ class WsgiTest(TestBase):
         self.assertEquals(1, len(result))
         self.assertEquals('obz', result[0]['name'])
 
+    def test_delete(self):
+        self._login()
+        rv = self.app.get('/delete/host/obz')
+        self.assertEquals(200, rv.status_code)
+        data = json.loads(rv.data)
+        self.assertEquals({'ok': True, 'result': True}, data)
+
+    def test_get_schema(self):
+        self._login()
+        rv = self.app.get('/schema')
+        self.assertEquals(200, rv.status_code)
+        self.assertEquals(TEST_SCHEMA, rv.data)
+
+    def test_login(self):
+        rv = self.app.post('/login',
+                           data=json.dumps({'username': 'admin',
+                                            'password': 'admin'}),
+                           content_type='application/json')
+        self.assertEquals(200, rv.status_code)
+        data = json.loads(rv.data)
+        self.assertEquals({'ok': True, 'result': True}, data)
+
+    def test_login_error(self):
+        rv = self.app.post('/login',
+                           data=json.dumps({'username': 'admin',
+                                            'password': 'wrong'}),
+                           content_type='application/json')
+        self.assertEquals(200, rv.status_code)
+        data = json.loads(rv.data)
+        self.assertEquals(
+            {'ok': False, 'error': 'Authentication error'}, data)

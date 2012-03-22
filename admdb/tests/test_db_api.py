@@ -70,6 +70,12 @@ class DbApiTest(TestBase):
                           self.api.create,
                           'host', host_data, auth_ctx)
 
+    def test_create_validation_error(self):
+        self.assertRaises(exceptions.ValidationError,
+                          self.api.create,
+                          'host', {'name': 'host2', 'ip': '299.0.0.1'},
+                          self.ctx)
+
     def test_update_ok(self):
         result = self.api.update('host', 'obz', {'ip': '2.3.4.5'}, self.ctx)
         self.assertTrue(result)
@@ -103,7 +109,7 @@ class DbApiTest(TestBase):
                           self.api.update,
                           'host', 'obz', {'ip': '299.0.0.1'}, self.ctx)
 
-    def test_update_validation_error_2(self):
+    def test_update_validation_error_in_deserialization(self):
         self.assertRaises(exceptions.ValidationError,
                           self.api.update,
                           'user', 'testuser',

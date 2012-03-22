@@ -37,6 +37,10 @@ TEST_SCHEMA = '''
   "last_login": {
     "type": "datetime"
   },
+  "password": {
+    "type": "password",
+    "size": 64
+  },
   "enabled": {
     "type": "bool",
     "default": "True"
