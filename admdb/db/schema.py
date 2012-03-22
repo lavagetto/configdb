@@ -1,12 +1,13 @@
 import json
 import re
 from dateutil import parser as dateutil_parser
+from admdb import exceptions
 from admdb.db import acl
 from admdb.db import validation
-from admdb import exceptions
 
 ENTITY_NAME_PATTERN = re.compile(r'^[-_a-z0-9]+$')
 FIELD_NAME_PATTERN = re.compile(r'^[a-z][-_a-z0-9]*$')
+DEFAULT_ACL = {'r': '*', 'w': '*'}
 
 
 class Field(acl.AclMixin, validation.ValidatorMixin):
@@ -153,14 +154,16 @@ class Schema(object):
     """
 
     def __init__(self, json_data):
-        self.tables = {}
+        self.entities = {}
         schema_data = json.loads(json_data)
         for tname, tdata in schema_data.iteritems():
             if not ENTITY_NAME_PATTERN.match(tname):
                 raise exceptions.SchemaError(
                     'invalid entity name "%s"' % tname)
-            self.tables[tname] = Entity(tname, tdata)
+            self.entities[tname] = Entity(tname, tdata)
         self._relation_check()
+        self.default_acl = acl.AclMixin()
+        self.default_acl.set_acl(DEFAULT_ACL)
 
     def _relation_check(self):
         """Verify that all relations reference existing entities."""
@@ -169,14 +172,36 @@ class Schema(object):
             for field in entity.fields.itervalues():
                 if field.is_relation():
                     seen.add(field.remote_name)
-        missing = seen - set(self.tables.keys())
+        missing = seen - set(self.entities.keys())
         if missing:
             raise exceptions.SchemaError(
                 'undefined entities referenced in relations: %s' % (
                     ', '.join(missing)))
 
     def get_entity(self, name):
-        return self.tables.get(name)
+        return self.entities.get(name)
 
     def get_entities(self):
-        return self.tables.itervalues()
+        return self.entities.itervalues()
+
+    def acl_check_fields(self, entity, fields, auth_context, op, obj):
+        """Authorize an operation on the fields of an instance."""
+        base_acl_check = (
+            entity.acl_check(auth_context, op, obj)
+            if entity.has_acl()
+            else self.default_acl.acl_check(auth_context, op, obj))
+        for field_name in fields:
+            field = entity.fields[field_name]
+            if not ((field.has_acl() 
+                     and field.acl_check(auth_context, op, obj))
+                    or base_acl_check):
+                raise exceptions.AclError(
+                    'unauthorized change to %s.%s' % (
+                        entity.name, field_name))
+
+    def acl_check_entity(self, entity, auth_context, op, obj):
+        """Authorize an operation on an entity."""
+        if not entity.acl_check(auth_context, op, obj):
+            raise exceptions.AclError(
+                'unauthorized change to %s' % (
+                    entity.name,))

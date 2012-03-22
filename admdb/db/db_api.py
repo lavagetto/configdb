@@ -81,23 +81,6 @@ class AdmDbApi(object):
             else:
                 setattr(obj, field_name, new_value)
 
-    def _authorize_obj_op(self, entity, auth_context, op, obj, fields):
-        """Authorize an operation on an instance."""
-        base_acl_check = entity.acl_check(auth_context, op, obj)
-        for field_name in fields:
-            field = entity.fields[field_name]
-            if not (field.acl_check(auth_context, op, obj)
-                    or base_acl_check):
-                raise exceptions.AclError(
-                    'unauthorized change to %s.%s' % (
-                        entity.name, field_name))
-
-    def _authorize_op(self, entity, auth_context, op, obj):
-        if not entity.acl_check(auth_context, op, obj):
-            raise exceptions.AclError(
-                'unauthorized change to %s' % (
-                    entity.name,))
-
     def update(self, class_name, object_name, data, auth_context):
         ent = self.schema.get_entity(class_name)
         if not ent:
@@ -107,9 +90,10 @@ class AdmDbApi(object):
         if not obj:
             raise exceptions.NotFound('%s/%s' % (class_name, object_name))
 
-        diffs = self._diff_object(ent, obj,
-                                  self._validate(ent, data))
-        self._authorize_obj_op(ent, auth_context, 'w', obj, diffs.keys())
+        diffs = self._diff_object(
+            ent, obj, self._validate(ent, data))
+        self.schema.acl_check_fields(
+            ent, diffs.keys(), auth_context, 'w', obj)
         self._apply_diff(ent, obj, diffs)
         return True
 
@@ -122,7 +106,7 @@ class AdmDbApi(object):
         if not obj:
             return True
 
-        self._authorize_op(ent, auth_context, 'w', obj)
+        self.schema.acl_check_entity(ent, auth_context, 'w', obj)
         with self.db.session() as session:
             self.db.delete(class_name, object_name, session)
         return True
@@ -132,7 +116,7 @@ class AdmDbApi(object):
         if not ent:
             raise exceptions.NotFound(class_name)
 
-        self._authorize_op(ent, auth_context, 'w', None)
+        self.schema.acl_check_entity(ent, auth_context, 'w', None)
         with self.db.session() as session:
             obj = self.db.create(class_name,
                                  self._validate(ent, data),
@@ -150,7 +134,7 @@ class AdmDbApi(object):
         if not obj:
             raise exceptions.NotFound('%s/%s' % (class_name, object_name))
 
-        self._authorize_op(ent, auth_context, 'r', obj)
+        self.schema.acl_check_entity(ent, auth_context, 'r', obj)
         return obj
 
     def find(self, class_name, query, auth_context):
@@ -158,5 +142,5 @@ class AdmDbApi(object):
         if not ent:
             raise exceptions.NotFound(class_name)
 
-        self._authorize_op(ent, auth_context, 'r', None)
+        self.schema.acl_check_entity(ent, auth_context, 'r', None)
         return self.db.find(class_name, query).all()
