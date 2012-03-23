@@ -41,7 +41,7 @@ class TestSaInterface(TestBase):
         db = self.init_db()
         self.load_some_data(db)
 
-        r = db.find('host', {'roles': 'role1', 'name': 'obz'}).all()
+        r = db.find('host', {'roles': ['role1'], 'name': 'obz'}).all()
         self.assertEquals(1, len(r))
         self.assertEquals('obz', r[0].name)
 
@@ -51,5 +51,5 @@ class TestSaInterface(TestBase):
 
         self.assertRaises(exceptions.NotFound,
                           db.find,
-                          'host', {'roles': 'zzzz'})
+                          'host', {'roles': ['zzzz']})
         

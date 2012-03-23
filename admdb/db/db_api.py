@@ -149,4 +149,5 @@ class AdmDbApi(object):
             raise exceptions.NotFound(entity_name)
 
         self.schema.acl_check_entity(ent, auth_context, 'r', None)
-        return self.db.find(entity_name, query).all()
+        return self.db.find(entity_name,
+                            self._validate(ent, query)).all()

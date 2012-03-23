@@ -7,6 +7,9 @@ Invalid = formencode.Invalid
 class RelationValidator(formencode.FancyValidator):
 
     def _to_python(self, value, state):
+        # Promote string to list.
+        if isinstance(value, basestring):
+            return [value]
         if (value is None or
             (isinstance(value, list) and
              (not value or isinstance(value[0], basestring)))):

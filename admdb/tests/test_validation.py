@@ -31,6 +31,7 @@ OK_TESTS = [
     ('relation', None, None),
     ('relation', [], []),
     ('relation', ['a', 'b'], ['a', 'b']),
+    ('relation', 'not a list', ['not a list']),
     ]
 
 FAIL_TESTS = [
@@ -45,7 +46,6 @@ FAIL_TESTS = [
     ('ip', 'not an ip'),
 
     ('relation', 32),
-    ('relation', 'not a list'),
     ('relation', [1, 2, 3]),
     ]
 

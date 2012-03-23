@@ -1,6 +1,6 @@
 
 
-class DbBase(object):
+class DbInterface(object):
     """A generic interface to a database."""
 
     def get_by_name(self, class_name, object_name):

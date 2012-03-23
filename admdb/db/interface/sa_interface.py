@@ -24,7 +24,7 @@ def unshared_session_manager(sessionmaker):
         s.commit()
 
 
-class SqlAlchemyDb(base.DbBase):
+class SqlAlchemyDb(base.DbInterface):
     """Interface to an SQL database using SQLAlchemy."""
 
     def __init__(self, uri, schema, schema_dir=None):
@@ -36,9 +36,7 @@ class SqlAlchemyDb(base.DbBase):
 
         self._objs = {'Base': Base}
         self._schema = schema
-        if not schema_dir:
-            schema_dir = tempfile.mkdtemp()
-        self._schema_dir = schema_dir
+        self._schema_dir = schema_dir # unused, meant for caching
         self._load_schema()
 
         self.engine = create_engine(uri, pool_recycle=1800)
@@ -46,11 +44,11 @@ class SqlAlchemyDb(base.DbBase):
         Base.metadata.create_all(self.engine)
         
     def _load_schema(self):
-        schema_file = os.path.join(self._schema_dir, '_db_schema.py')
-        schema_gen = sa_generator.SqlAlchemyGenerator(self._schema)
-        with open(schema_file, 'w') as fd:
-            fd.write(schema_gen.generate())
-        execfile(schema_file, self._objs)
+        with tempfile.NamedTemporaryFile() as schema_file:
+            schema_gen = sa_generator.SqlAlchemyGenerator(self._schema)
+            schema_file.write(schema_gen.generate())
+            schema_file.flush()
+            execfile(schema_file.name, self._objs)
 
     def _get_class(self, entity_name):
         return self._objs[entity_name.capitalize()]
@@ -60,7 +58,6 @@ class SqlAlchemyDb(base.DbBase):
             name=object_name).first()
 
     def find(self, entity_name, attrs):
-        # Make relational queries work by name.
         classobj = self._get_class(entity_name)
         entity = self._schema.get_entity(entity_name)
         query = classobj.query
@@ -68,10 +65,13 @@ class SqlAlchemyDb(base.DbBase):
             classattr = getattr(classobj, qattr)
             field = entity.fields[qattr]
             if field.is_relation():
-                rel_obj = self.get_by_name(field.remote_name, qvalue)
-                if not rel_obj:
-                    raise exceptions.NotFound('%s=%s' % (qattr, qvalue))
-                query = query.filter(classattr.contains(rel_obj))
+                # Make relational queries work by name. If the field
+                # is a relation, the value will be a list.
+                for rvalue in qvalue:
+                    rel_obj = self.get_by_name(field.remote_name, rvalue)
+                    if not rel_obj:
+                        raise exceptions.NotFound('%s=%s' % (qattr, rvalue))
+                    query = query.filter(classattr.contains(rel_obj))
             else:
                 query = query.filter(classattr == qvalue)
         return query

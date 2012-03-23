@@ -47,10 +47,28 @@ class DbApiTest(TestBase):
         self.assertEquals(1, len(result))
         self.assertEquals('obz', result[0].name)
 
+    def test_find_relation(self):
+        result = self.api.find('host', {'roles': 'role1'}, self.ctx)
+        self.assertTrue(result is not None)
+        self.assertEquals(1, len(result))
+        self.assertEquals('obz', result[0].name)
+
+    def test_find_relation_as_list(self):
+        result = self.api.find('host', {'roles': ['role1']}, self.ctx)
+        self.assertTrue(result is not None)
+        self.assertEquals(1, len(result))
+        self.assertEquals('obz', result[0].name)
+
     def test_find_nonexisting_entity_raises_notfound(self):
         self.assertRaises(exceptions.NotFound,
                           self.api.find,
                           'noent', {'name': 'blah'}, self.ctx)
+
+    def test_find_validation_error(self):
+        self.assertRaises(exceptions.ValidationError,
+                          self.api.find,
+                          'host', {'ip': '299.0.0.1'},
+                          self.ctx)
 
     def test_create_simple(self):
         host_data = {'name': 'utz', 'ip': '2.3.4.5'}
@@ -117,7 +135,7 @@ class DbApiTest(TestBase):
     def test_update_validation_error_on_relation(self):
         self.assertRaises(exceptions.ValidationError,
                           self.api.update,
-                          'host', 'obz', {'roles': 'not_a_list'}, self.ctx)
+                          'host', 'obz', {'roles': 42}, self.ctx)
 
     def test_update_validation_error_in_deserialization(self):
         self.assertRaises(exceptions.ValidationError,
