@@ -40,6 +40,12 @@ api_app = Blueprint('admdb', __name__)
 
 
 def json_request(fn):
+    """JSON request encoding.
+
+    Incoming POST requests must have a Content-Type of
+    'application/json', and the request body must contain a
+    JSON-encoded dictionary of key/value pairs.
+    """
     @functools.wraps(fn)
     def _json_request_wrapper(*args, **kwargs):
         if request.method == 'POST':
@@ -54,6 +60,18 @@ def json_request(fn):
 
 
 def json_response(fn):
+    """JSON response encoding.
+
+    All responses will have a Content-Type of 'application/json', and
+    they will contain a JSON-encoded dictionary wrapping the actual
+    result. The dictionary will always contain an 'ok' boolean
+    attribute indicating whether an error occurred or not. If 'ok' is
+    True, the result will be found in the 'result' attribute,
+    otherwise the 'error' attribute will contain details about the
+    error.
+    
+    Any exception in the wrapped method will be caught and wrapped.
+    """
     @functools.wraps(fn)
     def _json_response_wrapper(*args, **kwargs):
         try:
@@ -68,9 +86,10 @@ def json_response(fn):
     return _json_response_wrapper
 
 
-def to_dict(class_name, item):
+def _to_net(class_name, item):
+    """An Entity.to_net() wrapper that works on items and lists."""
     if isinstance(item, list):
-        return [to_dict(class_name, x) for x in item]
+        return [_to_net(class_name, x) for x in item]
     entity = g.api.schema.get_entity(class_name)
     return entity.to_net(item)
 
@@ -119,7 +138,7 @@ def create(class_name):
 @authenticate
 @json_response
 def get(class_name, object_name):
-    return to_dict(class_name,
+    return _to_net(class_name,
                    g.api.get(class_name, object_name, g.auth_ctx))
 
 
@@ -136,7 +155,7 @@ def update(class_name, object_name):
 @json_request
 @json_response
 def find(class_name):
-    return to_dict(class_name,
+    return _to_net(class_name,
                    g.api.find(class_name, g.request_data, g.auth_ctx))
 
 
@@ -169,14 +188,14 @@ def make_app(config={}):
     app.register_blueprint(api_app)
 
     # Initialize admdb configuration.
-    if 'SCHEMA_FILE' not in app.config:
-        raise Exception('SCHEMA_FILE undefined!')
     if 'AUTH_FN' not in app.config:
         app.config['AUTH_FN'] = auth.user_auth_fn()
     if 'AUTH_CONTEXT_FN' not in app.config:
         app.config['AUTH_CONTEXT_FN'] = auth.user_auth_context_fn()
 
     # Read schema from the schema file.
+    if 'SCHEMA_FILE' not in app.config:
+        raise Exception('SCHEMA_FILE undefined!')
     with open(app.config['SCHEMA_FILE'], 'r') as fd:
         app.config['SCHEMA_JSON'] = fd.read()
 
@@ -189,3 +208,33 @@ def make_app(config={}):
 
     return app
 
+
+def main(argv=None):
+    import argparse
+    import os
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config',
+                        help='Location of the app config file')
+    parser.add_argument('--port', type=int, default=3000,
+                        help='TCP port to listen to (default 3000)')
+    parser.add_argument('--debug', action='store_true')
+    args = parser.parse_args(argv)
+
+    if args.config:
+        os.environ['APP_CONFIG'] = args.config
+
+    logging.basicConfig(
+        level=logging.DEBUG if args.debug else logging.INFO)
+
+    try:
+        app = make_app()
+        app.run(port=args.port, debug=args.debug)
+    except Exception, e:
+        log.exception('Fatal error')
+        return 1
+
+
+if __name__ == '__main__':
+    import sys
+    sys.exit(main())
