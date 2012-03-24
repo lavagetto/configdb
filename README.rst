@@ -1,7 +1,6 @@
 
-==========
- configdb
-==========
+Overview
+--------
 
 `configdb` is a relational database for administrative databases (i.e.,
 stuff that gets read more often than written to) with a focus on
