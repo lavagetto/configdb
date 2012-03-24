@@ -1,0 +1,8 @@
+#!/bin/sh
+
+outdir=./out
+
+test -d ${outdir} || mkdir -p ${outdir}
+rst2html --template=site_template.txt ../../README.rst > ${outdir}/index.html
+sphinx-build -A embedded=True -b html -c . .. ${outdir}/documentation
+sphinx-build -A embedded=True -b html -c . ../admdb ${outdir}/reference
