@@ -7,4 +7,4 @@ outdir=${srcdir}/out
 test -d ${outdir} || mkdir -p ${outdir}
 rst2html --template=${srcdir}/site_template.txt ${srcdir}/../../README.rst > ${outdir}/index.html
 sphinx-build -A embedded=True -b singlehtml -c ${srcdir} ${srcdir}/.. ${outdir}/documentation
-sphinx-build -A embedded=True -b singlehtml -c ${srcdir} ${srcdir}/../../configdb ${outdir}/reference
+#sphinx-build -A embedded=True -b singlehtml -c ${srcdir} ${srcdir}/../../configdb ${outdir}/reference
