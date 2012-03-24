@@ -1,4 +1,4 @@
-from admdb import exceptions
+from configdb import exceptions
 
 
 class AuthContext(object):

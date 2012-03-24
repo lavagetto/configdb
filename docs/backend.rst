@@ -2,7 +2,7 @@
 Database API
 ============
 
-The most important component of `admdb` is the database API HTTP
+The most important component of `configdb` is the database API HTTP
 server, which exports the database API to clients, providing ACL
 enforcement and validation.
 
@@ -29,7 +29,7 @@ database known to `SQLAlchemy`_.
 For testing purposes, you can run a standalone instance of the
 database HTTP API server with::
 
-    $ env APP_CONFIG=path/to/my.config admdb-api-server
+    $ env APP_CONFIG=path/to/my.config configdb-api-server
 
 which will start a very simple HTTP server on port 3000.
 
@@ -68,7 +68,7 @@ you'll introduce arbitrary authentication errors.
 Authentication
 --------------
 
-HTTP connections to the database API server are authenticated: admdb
+HTTP connections to the database API server are authenticated: configdb
 has the concept of *authorized user*, and it will take advantage of
 it, if possible, in ACLs and audit logs.
 
@@ -77,7 +77,7 @@ only has to login once per session, using an explicit authentication
 endpoint (`/login`).
 
 Since authentication is a delicate topic in every organization, the
-admdb authentication support tries to be as flexible as possible. It
+configdb authentication support tries to be as flexible as possible. It
 works by providing an authentication layer abstraction that you can 
 extend to adapt it to your schema, or to integrate it with external
 systems. The API consists of two functions, configurable via the Flask
@@ -111,12 +111,12 @@ require changes in the authentication request data provided by the
 client, which by default passes `username` and `password` attributes.
 
 Some standard implementations of these functions are provided in the
-`admdb.server.auth` module, for instance:
+`configdb.server.auth` module, for instance:
 
 * if your schema includes an entity representing a user, you can have
-  admdb authenticate against itself::
+  configdb authenticate against itself::
 
-    from admdb.server.auth import *
+    from configdb.server.auth import *
     AUTH_FN = user_auth_fn('user')
     AUTH_CONTEXT_FN = user_auth_context_fn('user')
 
@@ -127,14 +127,14 @@ Some standard implementations of these functions are provided in the
 * if you are handling authentication directly at the HTTP server level,
   you can use the following functions instead::
 
-    from admdb.server.auth import *
+    from configdb.server.auth import *
     AUTH_FN = external_auth_fn
     AUTH_CONTEXT_FN = external_auth_context_fn
 
   These functions will work with any external authentication method
   that sets the `REMOTE_USER` variable in the WSGI environment. The
   ACL context created will not attempt to look up the user in the
-  admdb database though, so the `@self` ACL rule will not be
+  configdb database though, so the `@self` ACL rule will not be
   available.
 
 * if you are not interested in authentication at all, perhaps because

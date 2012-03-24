@@ -2,9 +2,9 @@ import json
 import os
 from werkzeug.exceptions import Forbidden
 from datetime import datetime
-from admdb.db import acl
-from admdb.tests import *
-from admdb.server import wsgiapp
+from configdb.db import acl
+from configdb.tests import *
+from configdb.server import wsgiapp
 
 
 def auth_fn(api, data):

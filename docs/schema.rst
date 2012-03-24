@@ -73,7 +73,7 @@ Relation
 ++++++++
 
 A relation is a field that references another entity. All relations
-in admdb are many-to-many: as a consequence, relation fields are
+in configdb are many-to-many: as a consequence, relation fields are
 always represented as lists of instance names (strings). There are no
 cascading deletes, so you'll have to maintain each entity separately.
 

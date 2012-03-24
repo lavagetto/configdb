@@ -1,4 +1,4 @@
-project = 'admdb'
+project = 'configdb'
 version = '0.1'
 language = 'en'
 master_doc = 'index'

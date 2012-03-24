@@ -1,8 +1,8 @@
-from admdb import exceptions
-from admdb.tests import *
-from admdb.db import db_api
-from admdb.db import acl
-from admdb.db.interface import sa_interface
+from configdb import exceptions
+from configdb.tests import *
+from configdb.db import db_api
+from configdb.db import acl
+from configdb.db.interface import sa_interface
 
 
 class DbApiTest(TestBase):

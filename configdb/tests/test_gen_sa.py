@@ -1,5 +1,5 @@
-from admdb.tests import *
-from admdb.db.interface import sa_generator
+from configdb.tests import *
+from configdb.db.interface import sa_generator
 
 
 class SqlAlchemyGeneratorTest(TestBase):

@@ -5,9 +5,9 @@ import logging
 import re
 import os
 import sys
-from admdb import exceptions
-from admdb.db import schema
-from admdb.client import connection
+from configdb import exceptions
+from configdb.db import schema
+from configdb.client import connection
 
 log = logging.getLogger(__name__)
 pl = inflect.engine()

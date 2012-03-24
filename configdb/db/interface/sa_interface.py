@@ -6,10 +6,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
-from admdb import exceptions
-from admdb.db import schema
-from admdb.db.interface import base
-from admdb.db.interface import sa_generator
+from configdb import exceptions
+from configdb.db import schema
+from configdb.db.interface import base
+from configdb.db.interface import sa_generator
 
 
 @contextlib.contextmanager

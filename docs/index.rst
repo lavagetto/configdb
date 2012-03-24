@@ -1,5 +1,5 @@
 
-admdb Documentation
+configdb Documentation
 +++++++++++++++++++
 
 .. toctree::

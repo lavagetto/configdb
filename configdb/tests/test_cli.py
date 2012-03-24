@@ -2,9 +2,9 @@ import mox
 import os
 import tempfile
 import shutil
-from admdb.client import cli
-from admdb.client import connection
-from admdb.tests import *
+from configdb.client import cli
+from configdb.client import connection
+from configdb.tests import *
 
 
 

@@ -1,5 +1,5 @@
-from admdb.tests import *
-from admdb.db import validation
+from configdb.tests import *
+from configdb.db import validation
 
 
 OK_TESTS = [

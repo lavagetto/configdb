@@ -5,9 +5,9 @@ import mox
 import os
 import sys
 import urllib2
-from admdb import exceptions
-from admdb.tests import *
-from admdb.client import connection
+from configdb import exceptions
+from configdb.tests import *
+from configdb.client import connection
 from datetime import datetime
 
 TEST_URL = 'http://url'

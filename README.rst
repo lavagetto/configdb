@@ -1,9 +1,9 @@
 
 =======
- admdb
+ configdb
 =======
 
-`admdb` is a relational database for administrative databases (i.e.,
+`configdb` is a relational database for administrative databases (i.e.,
 stuff that gets read more often than written to) with a focus on
 stability and usability rather than performance.
 
@@ -22,12 +22,12 @@ When provided with a simple JSON schema of your data, it will offer:
 This framework is meant for those small databases where the ability to
 make quick manual changes is critical: for instance, databases used to
 store configuration and management information. As an example, in our
-organization we're currently using one instance of `admdb` to store
+organization we're currently using one instance of `configdb` to store
 data about hosts, users and groups, and another one for source code
 projects.
 
 When managing systems, there is often the necessity of this kind of
-lightweight authoritative database. `admdb` is meant to remove the
+lightweight authoritative database. `configdb` is meant to remove the
 tedium of writing your own solution: just craft an appropriate schema,
 and the management functionality is already taken care of.
 

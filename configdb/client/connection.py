@@ -6,13 +6,13 @@ import os
 import sys
 import urllib
 import urllib2
-from admdb import exceptions
+from configdb import exceptions
 
 log = logging.getLogger(__name__)
 
 
 class Connection(object):
-    """Proxy for a remote admdb server.
+    """Proxy for a remote configdb server.
 
     We'll use HTTP requests to communicate to the remote server.
 

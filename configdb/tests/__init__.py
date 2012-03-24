@@ -1,7 +1,7 @@
 import unittest
 import shutil
 import tempfile
-from admdb.db import schema
+from configdb.db import schema
 
 
 TEST_SCHEMA = '''

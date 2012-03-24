@@ -1,4 +1,4 @@
-from admdb import schema
+from configdb import schema
 
 
 class ItemStub(object):

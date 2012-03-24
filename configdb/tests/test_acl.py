@@ -1,6 +1,6 @@
-from admdb.tests import *
-from admdb.db import acl
-from admdb import exceptions
+from configdb.tests import *
+from configdb.db import acl
+from configdb import exceptions
 
 
 class AclParseRulesTest(TestBase):

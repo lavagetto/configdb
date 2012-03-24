@@ -1,4 +1,4 @@
-from admdb.db import schema
+from configdb.db import schema
 import inflect
 
 pl = inflect.engine()

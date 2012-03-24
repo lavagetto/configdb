@@ -14,14 +14,14 @@ import json
 import logging
 from flask import Flask, Blueprint, request, jsonify, current_app, \
     session, abort, g
-from admdb import exceptions
-from admdb.db import schema
-from admdb.db import db_api
-from admdb.db.interface import sa_interface
-from admdb.server import auth
+from configdb import exceptions
+from configdb.db import schema
+from configdb.db import db_api
+from configdb.db.interface import sa_interface
+from configdb.server import auth
 
 log = logging.getLogger(__name__)
-api_app = Blueprint('admdb', __name__)
+api_app = Blueprint('configdb', __name__)
 
 
 def json_request(fn):
@@ -172,7 +172,7 @@ def make_app(config={}):
     app.config.update(config)
     app.register_blueprint(api_app)
 
-    # Initialize admdb configuration.
+    # Initialize configdb configuration.
     if 'AUTH_FN' not in app.config:
         app.config['AUTH_FN'] = auth.user_auth_fn()
     if 'AUTH_CONTEXT_FN' not in app.config:

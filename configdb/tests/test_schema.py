@@ -1,7 +1,7 @@
-from admdb import exceptions
-from admdb.db import acl
-from admdb.db import schema
-from admdb.tests import *
+from configdb import exceptions
+from configdb.db import acl
+from configdb.db import schema
+from configdb.tests import *
 from datetime import datetime
 
 

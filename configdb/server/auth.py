@@ -1,6 +1,6 @@
 import crypt
 from flask import request
-from admdb.db import acl
+from configdb.db import acl
 
 
 def user_auth_fn(user_entity_name='user'):

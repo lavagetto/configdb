@@ -1,6 +1,6 @@
-from admdb import exceptions
-from admdb.tests import *
-from admdb.db.interface import sa_interface
+from configdb import exceptions
+from configdb.tests import *
+from configdb.db.interface import sa_interface
 
 
 class TestSaInterface(TestBase):

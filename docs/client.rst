@@ -2,7 +2,7 @@
 Client
 ------
 
-`admdb` provides a few ways to manipulate the underlying database,
+`configdb` provides a few ways to manipulate the underlying database,
 which all expose the same create/read/update API, and enforce schema
 correctness. It is important to note that usually the client will need
 a copy of the schema (though it can be obtained from the API server,
@@ -38,7 +38,7 @@ Command-line Interface
 
 The command-line client has the following syntax::
 
-    $ admdb-client --url=API_URL <ENTITY> <VERB> [<NAME>|<OPTIONS>]
+    $ configdb-client --url=API_URL <ENTITY> <VERB> [<NAME>|<OPTIONS>]
 
 where ENTITY must be an entity defined in your schema, VERB can be one
 of `create`, `mod`, `delete`, `get` or `find`, NAME is an object name,
@@ -53,7 +53,7 @@ setup, such as the following example::
 
     #!/bin/sh
     export SCHEMA_FILE=/etc/mydb/schema.json
-    exec admdb-client --url=http://my.db.server/ "$@"
+    exec configdb-client --url=http://my.db.server/ "$@"
 
 
 Each entity will define a set of options corresponding to the

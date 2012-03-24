@@ -1,5 +1,5 @@
 
-`admdb` is a relational database for administrative databases (i.e.,
+`configdb` is a relational database for administrative databases (i.e.,
 stuff that gets read more often than written to) with a focus on
 stability and usability rather than performance.
 

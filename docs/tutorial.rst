@@ -3,7 +3,7 @@ Quick Tutorial
 ==============
 
 This short tutorial will walk through some example use cases of
-`admdb`, covering full deployment of a test system.
+`configdb`, covering full deployment of a test system.
 
 
 A Basic Schema
@@ -78,7 +78,7 @@ Save this in `app.conf`.
 
 You should now be able to start the HTTP server with::
 
-    $ env APP_CONFIG=app.conf admdb-api-server
+    $ env APP_CONFIG=app.conf configdb-api-server
 
 Visiting `http://localhost:3000/schema` should return you the JSON
 schema definition, it's a good test that the HTTP server is working.
@@ -89,7 +89,7 @@ Running the Command-line Client
 
 Let's try running the command-line client against the test database::
 
-    $ alias testdb='env SCHEMA_FILE=schema.json admdb-client \
+    $ alias testdb='env SCHEMA_FILE=schema.json configdb-client \
          --url=http://localhost:3000'
 
 We can then, for instance, create a new host object and verify that it
