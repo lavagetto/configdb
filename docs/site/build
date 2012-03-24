@@ -5,6 +5,6 @@ srcdir=${srcdir:-.}
 outdir=${srcdir}/out
 
 test -d ${outdir} || mkdir -p ${outdir}
-rst2html --template=site_template.txt ${srcdir}/../../README.rst > ${outdir}/index.html
+rst2html --template=${srcdir}/site_template.txt ${srcdir}/../../README.rst > ${outdir}/index.html
 sphinx-build -A embedded=True -b html -c ${srcdir} ${srcdir}/.. ${outdir}/documentation
-sphinx-build -A embedded=True -b html -c ${srcdir} ${srcdir}/../configdb ${outdir}/reference
+sphinx-build -A embedded=True -b html -c ${srcdir} ${srcdir}/../../configdb ${outdir}/reference
