@@ -1,6 +1,6 @@
 
-configdb Documentation
-+++++++++++++++++++
+Documentation
++++++++++++++
 
 .. toctree::
   :maxdepth: 2
