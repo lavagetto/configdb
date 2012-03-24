@@ -62,14 +62,41 @@ represented as arrays.
 
 
 
+Entity
+++++++
+
+An entity definition is just an array containing field definitions.
+
+Each entity definition must include a field called *name*, which is
+used as the primary key. In other words: every object in your database
+must have a name, and the entity / name combination must be globally
+unique.
+
+There are two special attributes that can be specified on an entity
+along the field definitions:
+
+*_acl*
+  `ACL Definition`_ for the entity itself
+
+*_help*
+  Description of the entity, shown in the command-line client help.
+
+
+
 Field
 +++++
 
+Field names must consist of alphanumeric ASCII characters only.
 A field definition can contain the following attributes:
 
 *type* (mandatory)
   The field type. One of *string*, *int*, *number* (floating-point
-  value), *bool*, *datetime*, or the special type *relation*.
+  value), *bool*, *datetime*, *text*, *binary*, or the special type
+  *relation* (see Relation_).
+
+*size*
+  Some field types support a maximum value size, which can be set
+  with this attribute.
 
 *validator*
   An optional validator for the field value. The validator must be one
@@ -90,6 +117,28 @@ The following attributes are specific to the database backend:
 
 *nullable*
   If False, prevent this field from being set to NULL.
+
+
+
+Relation
+++++++++
+
+A relation is a field that references another entity. All relations
+in admdb are many-to-many: as a consequence, relation fields are
+always represented as lists of instance names (strings).
+
+A relation field definition can contain the following attributes:
+
+*type* (mandatory)
+  Must be `relation`.
+
+*rel* (mandatory)
+  The name of the referenced entity.
+
+*acl*
+  An `ACL Definition`_.
+
+In the current implementation, relation fields can be empty.
 
 
 
@@ -121,24 +170,6 @@ group/*GROUP*
 
 
 
-Entity
-++++++
-
-An entity definition is just an array containing field definitions.
-
-Field names must consist of alphanumeric ASCII characters only.
-
-There are two special attributes that can be specified on an entity
-along the field definitions:
-
-*_acl*
-  `ACL Definition`_ for the entity itself
-
-*_help*
-  Description of the entity, shown in the command-line client help.
-
-
-
 Performance
 -----------
 
@@ -147,9 +178,7 @@ need a significant number of updates per second this is probably not
 the right technology to use.
 
 On the other hand, read performance can easily be scaled upwards
-either by running more app servers (they are completely stateless),
-or by taking advantage of the aggressive caching layer (that uses
-`Memcached`_).
+by running more app servers (they are completely stateless).
 
 
 
@@ -192,7 +221,94 @@ These are the configuration options known to the application:
 
 `AUTH_FN`
 `AUTH_CONTEXT_FN`
-  See the `Authentication`_ chapter for details.
+  See the Authentication_ chapter for details.
+
+You will also need to set the Flask `SECRET_KEY` configuration option
+to something sufficiently random.  If you're running more than one app
+server, ensure that the value of `SECRET_KEY` is consistent, otherwise
+you'll introduce arbitrary authentication errors.
+
+
+
+Authentication
+--------------
+
+HTTP connections to the database API server are authenticated: admdb
+has the concept of *authorized user*, and it will take advantage of
+it, if possible, in ACLs and audit logs.
+
+Authentication is token-based (set via an HTTP cookie), so the client
+only has to login once per session, using an explicit authentication
+endpoint (`/login`).
+
+Since authentication is a delicate topic in every organization, the
+admdb authentication support tries to be as flexible as possible. It
+works by providing an authentication layer abstraction that you can 
+extend to adapt it to your schema, or to integrate it with external
+systems. The API consists of two functions, configurable via the Flask
+application config:
+
+`AUTH_FN`
+  The authentication function. This will be called by the /login API
+  endpoint, and it should use the request data to authenticate the
+  caller. The function signature should be::
+
+      def auth_fn(db_api, request_data):
+
+  and it should return `None` if the authentication failed, or an
+  authentication token if successful, which will be associated with
+  the client session and passed to the `AUTH_CONTEXT_FN`.
+
+`AUTH_CONTEXT_FN`
+  Every request to the database API has an associated *authentication
+  context*, which is used by the ACL rules. An authentication context
+  can optionally provide a username and a set of groups that the user
+  belongs to (for user- and group-matching ACL rules), and a reference
+  to a "self" object. See the API documentation for the
+  `acl.AuthContext` class for details.
+
+  This method will be called with the session authentication token as
+  its only argument, and it should return an `acl.AuthContext`
+  instance.
+
+Naturally, more complex implementations of these functions might
+require changes in the authentication request data provided by the
+client, which by default passes `username` and `password` attributes.
+
+Some standard implementations of these functions are provided in the
+`admdb.server.auth` module, for instance:
+
+* if your schema includes an entity representing a user, you can have
+  admdb authenticate against itself::
+
+    from admdb.server.auth import *
+    AUTH_FN = user_auth_fn('user')
+    AUTH_CONTEXT_FN = user_auth_context_fn('user')
+
+  here `user` is the name of your user entity. This `user_auth_fn`
+  assumes that your user entity has a `password` field encrypted using
+  the system crypt() library.
+
+* if you are handling authentication directly at the HTTP server level,
+  you can use the following functions instead::
+
+    from admdb.server.auth import *
+    AUTH_FN = external_auth_fn
+    AUTH_CONTEXT_FN = external_auth_context_fn
+
+  These functions will work with any external authentication method
+  that sets the `REMOTE_USER` variable in the WSGI environment. The
+  ACL context created will not attempt to look up the user in the
+  admdb database though, so the `@self` ACL rule will not be
+  available.
+
+* if you are not interested in authentication at all, perhaps because
+  you're running on a trusted network and your schema uses no ACLs, it
+  is possible to bypass authentication entirely by adding this to the
+  app configuration file::
+
+    AUTH_BYPASS = True
+
 
 
 

@@ -61,6 +61,10 @@ class WsgiTest(TestBase):
                            content_type='application/json')
         self.assertEquals(200, rv.status_code)
 
+    def test_config_without_schema_file_raises_exception(self):
+        self.assertRaises(Exception,
+                          wsgiapp.make_app, {})
+
     def test_unauthenticated_request(self):
         rv = self.app.get('/get/host/obz')
         self.assertEquals(403, rv.status_code)

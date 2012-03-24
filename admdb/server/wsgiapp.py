@@ -2,25 +2,10 @@
 
 A note on authentication:
 
-Authentication works like a standard web app: if no signed session
-cookie is present, we return a status of 403. The client is supposed
-to request a login session with username and password at the /login
-URL endpoint.
-
-The authentication support is fully modular, two hooks are provided
-to support different authentication behaviors than the default:
-
-app.config['AUTH_FN']
-  A function that gets called with on /login, with the request data
-  dictionary as its argument. It should authenticate the credentials
-  and return an authentication token if the authentication was
-  successful, or None otherwise. The returned auth token will be
-  saved in the client session and passed to the AUTH_CONTEXT_FN.
-
-app.config['AUTH_CONTEXT_FN']
-  A function that is called on every request, with the auth token
-  as argument. It is supposed to return an instance of acl.AuthContext
-  initialized with the proper authentication context data.
+Authentication works like a standard web app: session data is stored
+in a signed client-side cookie. If no signed session cookie is
+present, we return a status of 403. The client is supposed to request
+a login session at the /login URL endpoint.
 
 """
 
