@@ -1,14 +1,27 @@
-#!/bin/sh -x
+#!/bin/bash -x
 
 srcdir=$(dirname $0)
 srcdir=${srcdir:-.}
 outdir=${srcdir}/out
 
+# Some static files we don't need, and which will confuse Hyde.
+clean_sphinx_cruft() {
+  local relpath="$1"
+  for f in .buildinfo .doctrees _static objects.inv ; do
+    rm -fr ${outdir}/${relpath}/${f}
+  done
+}
+
 test -d ${outdir} || mkdir -p ${outdir}
 rst2html --template=${srcdir}/site_template.txt ${srcdir}/../../README.rst > ${outdir}/index.html
-sphinx-build -A embedded=True -b singlehtml -c ${srcdir} ${srcdir}/.. ${outdir}/documentation
-for f in .buildinfo .doctrees _static objects.inv ; do
-  rm -fr ${outdir}/documentation/${f}
-done
-#sphinx-build -A embedded=True -b singlehtml -c ${srcdir} ${srcdir}/../../configdb ${outdir}/reference
-#rm -fr ${outdir}/reference/{.doctree,.static,objects.inv}
+sphinx-build ${SPHINX_OPTS} -A embedded=True -b singlehtml -c ${srcdir} ${srcdir}/.. ${outdir}/documentation \
+  && clean_sphinx_cruft documentation
+
+apidir=${srcdir}/../api
+(cd ${srcdir}/../.. && sphinx-apidoc -o docs/api ${srcdir}/../../configdb)
+test -e ${apidir}/index.rst || ln -s modules.rst ${apidir}/index.rst
+# seriously, is this the only way to remove a submodule from autodoc? :(
+(cd ${apidir} && mv configdb.rst .tmp && sed -e 's/configdb\.tests//' < .tmp > configdb.rst && rm -f .tmp)
+sphinx-build ${SPHINX_OPTS} -A embedded=True -b singlehtml -c ${srcdir} ${apidir} ${outdir}/reference \
+  && clean_sphinx_cruft reference
+
