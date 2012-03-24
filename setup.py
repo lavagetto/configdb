@@ -9,7 +9,7 @@ setup(
   author='ale',
   author_email='ale@incal.net',
   url='http://git.autistici.org/p/configdb',
-  install_requires=['Flask', 'inflect', 'SQLAlchemy>0.7'],
+  install_requires=['Flask', 'formencode', 'inflect', 'SQLAlchemy>0.7'],
   setup_requires=[],
   zip_safe=True,
   packages=find_packages(),
