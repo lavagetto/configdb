@@ -101,7 +101,11 @@ class Connection(object):
         # If successful, save the auth tokens to file.
         if self._auth_file:
             old_umask = os.umask(077)
-            self._cj.save(self._auth_file)
+            try:
+                self._cj.save(self._auth_file)
+            except Exception, e:
+                log.warn('Could not save session state to %s: %s',
+                         self._auth_file, e)
             os.umask(old_umask)
 
     def create(self, entity_name, data):

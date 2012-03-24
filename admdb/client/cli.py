@@ -4,6 +4,8 @@ import inflect
 import logging
 import re
 import os
+import sys
+from admdb import exceptions
 from admdb.db import schema
 from admdb.client import connection
 
@@ -181,6 +183,7 @@ class Parser(object):
         self.parser = self._create_parser(**kw)
         self.parser.add_argument('--url',
                                  default='http://localhost:8230')
+        self.parser.add_argument('--debug', action='store_true')
 
     def _init_subparser(self, entity, parser):
         subparsers = parser.add_subparsers(
@@ -209,21 +212,47 @@ class Parser(object):
 
     def run(self, input_args):
         args = self.parser.parse_args(input_args)
-        conn = connection.Connection(args.url)
+        if args.debug:
+            logging.getLogger().setLevel(logging.DEBUG)
+
+        conn = connection.Connection(args.url, self.schema)
         args._action.run(conn, args._entity, args)
 
 
+def _die(*args):
+    logging.error(*args)
+    return 1
+
+
 def main(args=None):
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO,
+                        format='%(levelname)s: %(message)s')
 
-    schema_file = os.getenv('SCHEMA', './schema.json')
-    with open(schema_file, 'r') as fd:
-        schema_json = fd.read()
+    schema_file = os.getenv('SCHEMA_FILE')
+    if not schema_file:
+        return _die('The SCHEMA_FILE environment variable is not set, '
+                    'please point it at your JSON schema file.')
+    try:
+        with open(schema_file, 'r') as fd:
+            schema_json = fd.read()
+    except IOError, e:
+        return _die('Could not read schema file: %s', e)
 
-    parser = Parser(schema.Schema(schema_json))
-    parser.run(args)
+    try:
+        parser = Parser(schema.Schema(schema_json))
+    except ValueError, e:
+        return _die('Syntax error in the JSON schema file: %s: %s',
+                    schema_file, e)
+    except exceptions.SchemaError, e:
+        return _die('Schema validation error: %s', e)
+
+    try:
+        parser.run(args)
+    except Exception, e:
+        return _die(e)
+
     return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

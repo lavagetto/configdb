@@ -7,6 +7,48 @@ from admdb.client import connection
 from admdb.tests import *
 
 
+
+class CliMainTest(mox.MoxTestBase):
+
+    def setUp(self):
+        mox.MoxTestBase.setUp(self)
+        self.mox.StubOutWithMock(os, 'getenv')
+        self._tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self._tmpdir)
+        mox.MoxTestBase.tearDown(self)
+
+    def test_schema_file_unset(self):
+        os.getenv('SCHEMA_FILE').AndReturn(None)
+        self.mox.ReplayAll()
+        self.assertEquals(1, cli.main([]))
+
+    def test_schema_file_non_existing(self):
+        os.getenv('SCHEMA_FILE').AndReturn(
+            os.path.join(self._tmpdir, 'missing.json'))
+        self.mox.ReplayAll()
+        self.assertEquals(1, cli.main([]))
+
+    def test_schema_file_invalid_json(self):
+        schemaf = os.path.join(self._tmpdir, 'schema.json')
+        with open(schemaf, 'w') as fd:
+            fd.write('{"invalid json":,}')
+
+        os.getenv('SCHEMA_FILE').AndReturn(schemaf)
+        self.mox.ReplayAll()
+        self.assertEquals(1, cli.main([]))
+
+    def test_schema_file_invalid_schema(self):
+        schemaf = os.path.join(self._tmpdir, 'schema.json')
+        with open(schemaf, 'w') as fd:
+            fd.write('{"entity":{}}')
+
+        os.getenv('SCHEMA_FILE').AndReturn(schemaf)
+        self.mox.ReplayAll()
+        self.assertEquals(1, cli.main([]))
+
+
 class CliTest(mox.MoxTestBase):
 
     def setUp(self):
@@ -24,10 +66,11 @@ class CliTest(mox.MoxTestBase):
         schema_file = os.path.join(self._tmpdir, 'schema.json')
         with open(schema_file, 'w') as fd:
             fd.write(TEST_SCHEMA)
-        os.getenv('SCHEMA', mox.IgnoreArg()).AndReturn(schema_file)
+        os.getenv('SCHEMA_FILE').AndReturn(schema_file)
 
         self.conn = self.mox.CreateMockAnything()
-        connection.Connection(mox.IsA(str)).AndReturn(self.conn)
+        connection.Connection(mox.IsA(str), mox.IgnoreArg()
+                              ).AndReturn(self.conn)
 
     def test_get_object(self):
         self._connect()
@@ -44,6 +87,14 @@ class CliTest(mox.MoxTestBase):
 
         self.assertEquals(
             0, cli.main(['host', 'find', '--name=obz']))
+
+    def test_find_object_by_relation(self):
+        self._connect()
+        self.conn.find('host', {'roles': ['role1']}).AndReturn(['ok'])
+        self.mox.ReplayAll()
+
+        self.assertEquals(
+            0, cli.main(['host', 'find', '--roles=role1']))
 
     def test_create_object(self):
         self._connect()
