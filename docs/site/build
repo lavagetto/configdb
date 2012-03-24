@@ -1,8 +1,10 @@
 #!/bin/sh
 
-outdir=./out
+srcdir=$(dirname $0)
+srcdir=${srcdir:-.}
+outdir=${srcdir}/out
 
 test -d ${outdir} || mkdir -p ${outdir}
-rst2html --template=site_template.txt ../../README.rst > ${outdir}/index.html
-sphinx-build -A embedded=True -b html -c . .. ${outdir}/documentation
-sphinx-build -A embedded=True -b html -c . ../configdb ${outdir}/reference
+rst2html --template=site_template.txt ${srcdir}/../../README.rst > ${outdir}/index.html
+sphinx-build -A embedded=True -b html -c ${srcdir} ${srcdir}/.. ${outdir}/documentation
+sphinx-build -A embedded=True -b html -c ${srcdir} ${srcdir}/configdb ${outdir}/reference
