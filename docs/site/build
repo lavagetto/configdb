@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 
 srcdir=$(dirname $0)
 srcdir=${srcdir:-.}
@@ -7,6 +7,8 @@ outdir=${srcdir}/out
 test -d ${outdir} || mkdir -p ${outdir}
 rst2html --template=${srcdir}/site_template.txt ${srcdir}/../../README.rst > ${outdir}/index.html
 sphinx-build -A embedded=True -b singlehtml -c ${srcdir} ${srcdir}/.. ${outdir}/documentation
-rm -fr ${outdir}/documentation/{.buildinfo,.doctrees,_static,objects.inv}
+for f in .buildinfo .doctrees _static objects.inv ; do
+  rm -fr ${outdir}/${f}
+done
 #sphinx-build -A embedded=True -b singlehtml -c ${srcdir} ${srcdir}/../../configdb ${outdir}/reference
 #rm -fr ${outdir}/reference/{.doctree,.static,objects.inv}
