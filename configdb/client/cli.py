@@ -13,6 +13,10 @@ log = logging.getLogger(__name__)
 pl = inflect.engine()
 
 
+class CmdError(Exception):
+    pass
+
+
 def read_password(value):
     return getpass.getpass(prompt='Password: ')
 
@@ -99,9 +103,8 @@ class UpdateAction(Action):
 
     def run(self, conn, entity, args):
         if args.add and args.delete:
-            raise Exception('Can\'t specify --add and --delete together')
+            raise CmdError('Can\'t specify --add and --delete together')
 
-        log.info('update: %s/%s', entity.name, args._name)
         obj = conn.get(entity.name, args._name)
         update_data = {}
         for field in entity.fields.itervalues():
@@ -110,7 +113,7 @@ class UpdateAction(Action):
                 continue
             if field.is_relation():
                 if not value:
-                    raise Exception('Relational argument "%s" is empty' % (
+                    raise CmdError('Relational argument "%s" is empty' % (
                             field.name,))
                 rel_list = set(obj[field.name])
                 if args.add:
@@ -118,8 +121,8 @@ class UpdateAction(Action):
                 elif args.delete:
                     rel_list.discard(value)
                 else:
-                    raise Exception('Specified relational attribute without '
-                                    '--add or --delete')
+                    raise CmdError('Specified relational attribute without '
+                                   '--add or --delete')
                 update_data[field.name] = list(rel_list)
             else:
                 # Auto-clear items.
@@ -127,7 +130,7 @@ class UpdateAction(Action):
                     value = None
                 update_data[field.name] = value
 
-        log.info('update: %s', update_data)
+        log.info('update: %s/%s %s', entity.name, args._name, update_data)
         conn.update(entity.name, args._name, update_data)
 
 
@@ -169,6 +172,27 @@ class DeleteAction(Action):
         conn.delete(entity.name, args.name)
 
 
+class AuditAction(object):
+    """Query audit logs (a top-level action)."""
+
+    name = 'audit'
+    descr = 'query audit logs'
+
+    AUDIT_ATTRS = ('entity', 'object', 'user', 'op')
+
+    def __init__(self, parser):
+        for attr in self.AUDIT_ATTRS:
+            parser.add_argument('--' + attr)
+
+    def run(self, conn, entity, args):
+        query = dict((x, getattr(args, x))
+                     for x in self.AUDIT_ATTRS
+                     if getattr(args, x))
+        log.info('audit query: %s', query)
+        for entry in conn.get_audit(query):
+            print entry
+
+
 class Parser(object):
 
     actions = (
@@ -176,7 +200,12 @@ class Parser(object):
         DeleteAction,
         UpdateAction,
         GetAction,
-        FindAction)
+        FindAction,
+        )
+
+    toplevel_actions = (
+        AuditAction,
+        )
 
     def __init__(self, schema, **kw):
         self.schema = schema
@@ -213,6 +242,11 @@ class Parser(object):
                                               help=entity.description)
             self._init_subparser(entity, subparser)
             subparser.set_defaults(_entity=entity)
+        for action_class in self.toplevel_actions:
+            subparser = subparsers.add_parser(action_class.name,
+                                              help=action_class.descr)
+            action = action_class(subparser)
+            subparser.set_defaults(_action=action, _entity=None)
         return parser
 
     def run(self, input_args):

@@ -177,3 +177,42 @@ class CliTest(mox.MoxTestBase):
                  '--ip=2.3.4.5',
                  '--delete', '--role=role1']))
 
+    def test_update_object_conflicting_relation_flags(self):
+        self._connect()
+        self.mox.ReplayAll()
+
+        self.assertEquals(
+            1, cli.main(
+                ['host', 'mod', 'utz',
+                 '--add', '--delete', '--role=role2']))
+
+    def test_update_object_bad_relation_flags(self):
+        self._connect()
+        self.mox.ReplayAll()
+
+        self.assertEquals(
+            1, cli.main(
+                ['host', 'mod', 'utz',
+                 '--add', '--role=']))
+
+    def test_update_object_relation_flag_without_add_or_delete(self):
+        self._connect()
+        self.mox.ReplayAll()
+
+        self.assertEquals(
+            1, cli.main(
+                ['host', 'mod', 'utz',
+                 '--role=role1']))
+
+    def test_audit(self):
+        self._connect()
+        self.conn.get_audit({'entity': 'host', 'object': 'obz'}).AndReturn(
+            [{'entity': 'host', 'object': 'obz',
+              'user': 'admin', 'op': 'create',
+              'stamp': '2006-01-01T00:00:00'}])
+        self.mox.ReplayAll()
+
+        self.assertEquals(
+            0, cli.main(
+                ['audit', '--entity=host', '--object=obz']))
+            
