@@ -3,9 +3,6 @@
 class DbInterface(object):
     """A generic interface to a database."""
 
-    def get_by_name(self, class_name, object_name):
-        """Return an instance of an entity, by name."""
-
     def session(self):
         """Return a session object.
 
@@ -16,7 +13,10 @@ class DbInterface(object):
         database.
         """
 
-    def find(self, class_name, attrs):
+    def get_by_name(self, class_name, object_name, session):
+        """Return an instance of an entity, by name."""
+
+    def find(self, class_name, attrs, session):
         """Query an entity according to an attribute-wise query."""
 
     def delete(self, class_name, object_name, session):

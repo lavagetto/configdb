@@ -30,6 +30,9 @@ class AuthContext(object):
     def get_self(self):
         return self.self_obj
 
+    def get_username(self):
+        return self.user
+
 
 class AclRule(object):
 

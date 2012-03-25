@@ -9,6 +9,17 @@ class SqlAlchemyGenerator(object):
     def __init__(self, schema_obj):
         self.schema = schema_obj
 
+    def _audit_table_def(self):
+        return """
+audit_table = Table('_audit', Base.metadata,
+    Column('who', String(64), index=True),
+    Column('entity', String(64), index=True),
+    Column('object', String(64), index=True),
+    Column('what', String(8), index=True),
+    Column('stamp', DateTime(), default=datetime.now),
+    Column('data', UnicodeText()))
+"""
+
     def _sa_entity_def(self, entity):
         cols = []
         for field in entity.fields.itervalues():
@@ -85,7 +96,9 @@ class %(class_name)s(Base):
         
     def generate(self):
         out = ['from sqlalchemy import *',
-               'from sqlalchemy.orm import *']
+               'from sqlalchemy.orm import *',
+               'from datetime import datetime',
+               self._audit_table_def()]
         for ent in self.schema.get_entities():
             out.append(self._sa_entity_aux_tables(ent))
             out.append(self._sa_entity_def(ent))

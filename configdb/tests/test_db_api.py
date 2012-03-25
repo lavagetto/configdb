@@ -3,6 +3,7 @@ from configdb.tests import *
 from configdb.db import db_api
 from configdb.db import acl
 from configdb.db.interface import sa_interface
+import sqlalchemy
 
 
 class DbApiTest(TestBase):
@@ -72,14 +73,20 @@ class DbApiTest(TestBase):
 
     def test_create_simple(self):
         host_data = {'name': 'utz', 'ip': '2.3.4.5'}
-        result = self.api.create('host', host_data, self.ctx)
-        self.assertTrue(result > 0)
+        self.assertTrue(self.api.create('host', host_data, self.ctx))
+
+    def test_create_adds_audit_log(self):
+        host_data = {'name': 'utz', 'ip': '2.3.4.5'}
+        self.assertTrue(self.api.create('host', host_data, self.ctx))
+
+        result = list(self.api.get_audit({'entity': 'host',
+                                          'object': 'utz'}, self.ctx))
+        self.assertEquals(1, len(result))
 
     def test_create_with_relations(self):
         host_data = {'name': 'utz', 'ip': '2.3.4.5',
                      'roles': ['role1']}
-        result = self.api.create('host', host_data, self.ctx)
-        self.assertTrue(result > 0)
+        self.assertTrue(self.api.create('host', host_data, self.ctx))
 
     def test_create_unknown_entity(self):
         self.assertRaises(exceptions.NotFound,
@@ -93,6 +100,12 @@ class DbApiTest(TestBase):
                           self.api.create,
                           'host', host_data, auth_ctx)
 
+    def test_create_without_name(self):
+        self.assertRaises(exceptions.ValidationError,
+                          self.api.create,
+                          'host', {'ip': '192.168.1.1'},
+                          self.ctx)
+
     def test_create_validation_error(self):
         self.assertRaises(exceptions.ValidationError,
                           self.api.create,
@@ -105,6 +118,24 @@ class DbApiTest(TestBase):
 
         self.assertEquals('2.3.4.5',
                           self.api.get('host', 'obz', self.ctx).ip)
+
+    def test_update_adds_audit_log(self):
+        result = self.api.update('host', 'obz', {'ip': '2.3.4.5'}, self.ctx)
+        self.assertTrue(result)
+
+        result = list(self.api.get_audit({'entity': 'host',
+                                          'object': 'obz',
+                                          'what': 'update'}, self.ctx))
+        self.assertEquals(1, len(result))
+
+    def test_update_rename(self):
+        result = self.api.update('host', 'obz', {'name': 'utz'}, self.ctx)
+        self.assertTrue(result)
+
+        self.assertEquals('utz',
+                          self.api.get('host', 'utz', self.ctx).name)
+        self.assertRaises(exceptions.NotFound,
+                          self.api.get, 'host', 'obz', self.ctx)
 
     def test_update_modify_relation(self):
         self.assertTrue(
@@ -144,6 +175,11 @@ class DbApiTest(TestBase):
                           {'last_login': 'not_a_valid_iso_timestamp'}, 
                           self.ctx)
 
+    def test_update_sql_integrity_error(self):
+        self.assertRaises(sqlalchemy.exceptions.IntegrityError,
+                          self.api.update,
+                          'host', 'obz', {'name': None}, self.ctx)
+
     def test_update_unknown_entity_error(self):
         self.assertRaises(exceptions.NotFound,
                           self.api.update,
@@ -174,6 +210,15 @@ class DbApiTest(TestBase):
         self.assertRaises(exceptions.NotFound,
                           self.api.get,
                           'host', 'obz',  self.ctx)
+
+    def test_delete_adds_audit_log(self):
+        self.assertTrue(
+            self.api.delete('host', 'obz', self.ctx))
+
+        result = list(self.api.get_audit({'entity': 'host',
+                                          'object': 'obz',
+                                          'what': 'delete'}, self.ctx))
+        self.assertEquals(1, len(result))
 
     def test_delete_twice(self):
         self.assertTrue(
@@ -208,3 +253,25 @@ class DbApiTest(TestBase):
         user_data = {'ssh_keys': ['testuser@host2']}
         r = self.api.update('user', 'testuser', user_data, auth_ctx)
         self.assertTrue(r)
+
+    def test_get_audit_requires_entity_spec(self):
+        self.assertRaises(exceptions.NotFound,
+                          self.api.get_audit,
+                          {'who': 'admin'},
+                          self.ctx)
+
+    def test_get_audit_requires_existing_entity(self):
+        self.assertRaises(exceptions.NotFound,
+                          self.api.get_audit,
+                          {'entity': 'noent'},
+                          self.ctx)
+
+    def test_get_audit_enforces_acls(self):
+        with self.db.session() as s:
+            p = self.db.create('private', {'name': 'test'}, s)
+
+        auth_ctx = acl.AuthContext('bad_user')
+        self.assertRaises(exceptions.AclError,
+                          self.api.get_audit,
+                          {'entity': 'private', 'what': 'test'},
+                          auth_ctx)

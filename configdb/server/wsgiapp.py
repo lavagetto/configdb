@@ -151,6 +151,22 @@ def delete(class_name, object_name):
     return g.api.delete(class_name, object_name, g.auth_ctx)
 
 
+@api_app.route('/audit')
+@authenticate
+@json_request
+@json_response
+def get_audit():
+    def _audit_to_dict(x):
+        return {'entity': x.entity,
+                'object': x.object,
+                'what': x.what,
+                'data': x.data,
+                'who': x.who,
+                'stamp': x.stamp.isoformat()}
+    return [_audit_to_dict(x)
+            for x in g.api.get_audit(g.request_data, g.auth_ctx)]
+
+
 @api_app.route('/schema')
 @authenticate
 def get_schema():

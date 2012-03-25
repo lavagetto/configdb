@@ -66,6 +66,15 @@ TEST_SCHEMA = '''
   "_acl": {
     "w": "@users"
   }
+},
+"private": {
+  "name": {
+    "type": "string"
+  },
+  "_acl": {
+    "r": "user/admin",
+    "w": "user/admin"
+  }
 }
 }
 '''

@@ -105,7 +105,7 @@ class WsgiTest(TestBase):
                            content_type='application/json')
         self.assertEquals(200, rv.status_code)
         data = json.loads(rv.data)
-        self.assertEquals({'ok': True, 'result': 2}, data)
+        self.assertEquals({'ok': True, 'result': True}, data)
 
     def test_require_json_content_type_on_post(self):
         self._login()

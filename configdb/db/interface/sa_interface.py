@@ -1,4 +1,5 @@
 import contextlib
+import json
 import os
 import tempfile
 
@@ -53,14 +54,42 @@ class SqlAlchemyDb(base.DbInterface):
     def _get_class(self, entity_name):
         return self._objs[entity_name.capitalize()]
 
-    def get_by_name(self, entity_name, object_name):
-        return self._get_class(entity_name).query.filter_by(
+    def session(self):
+        return unshared_session_manager(self.Session)
+
+    def add_audit(self, entity_name, object_name, operation,
+                  data, auth_ctx, session):
+        ins = self._objs['audit_table'].insert()
+        session.execute(ins, {'entity': entity_name,
+                              'object': object_name,
+                              'what': operation,
+                              'data': json.dumps(data) if data else None,
+                              'who': auth_ctx.get_username()})
+
+    def get_audit(self, query, session):
+        audit_table = self._objs['audit_table']
+        sql_query = None
+        for key, value in query.iteritems():
+            qstmt = (getattr(audit_table.c, key) == value)
+            if sql_query is None:
+                sql_query = qstmt
+            else:
+                sql_query &= qstmt
+        return session.execute(
+            audit_table.select().where(sql_query).order_by('stamp desc'))
+
+    def get_by_name(self, entity_name, object_name, session=None):
+        if session is None:
+            session = self.Session
+        return session.query(self._get_class(entity_name)).filter_by(
             name=object_name).first()
 
-    def find(self, entity_name, attrs):
+    def find(self, entity_name, attrs, session=None):
+        if session is None:
+            session = self.Session
         classobj = self._get_class(entity_name)
         entity = self._schema.get_entity(entity_name)
-        query = classobj.query
+        query = session.query(classobj)
         for qattr, qvalue in attrs.iteritems():
             classattr = getattr(classobj, qattr)
             field = entity.fields[qattr]
@@ -68,7 +97,8 @@ class SqlAlchemyDb(base.DbInterface):
                 # Make relational queries work by name. If the field
                 # is a relation, the value will be a list.
                 for rvalue in qvalue:
-                    rel_obj = self.get_by_name(field.remote_name, rvalue)
+                    rel_obj = self.get_by_name(
+                        field.remote_name, rvalue, session)
                     if not rel_obj:
                         raise exceptions.NotFound('%s=%s' % (qattr, rvalue))
                     query = query.filter(classattr.contains(rel_obj))
@@ -76,11 +106,8 @@ class SqlAlchemyDb(base.DbInterface):
                 query = query.filter(classattr == qvalue)
         return query
 
-    def session(self):
-        return unshared_session_manager(self.Session)
-
     def delete(self, entity_name, object_name, session):
-        session.delete(self.get_by_name(entity_name, object_name))
+        session.delete(self.get_by_name(entity_name, object_name, session))
 
     def create(self, entity_name, attrs, session):
         obj = self._get_class(entity_name)()
@@ -90,7 +117,8 @@ class SqlAlchemyDb(base.DbInterface):
             if field.is_relation():
                 rel_attr = getattr(obj, k)
                 for lv in v:
-                    rel_obj = self.get_by_name(field.remote_name, lv)
+                    rel_obj = self.get_by_name(
+                        field.remote_name, lv, session)
                     rel_attr.append(rel_obj)
             else:
                 setattr(obj, k, v)
