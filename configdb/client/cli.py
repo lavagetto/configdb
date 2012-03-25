@@ -183,6 +183,11 @@ class Parser(object):
         self.parser = self._create_parser(**kw)
         self.parser.add_argument('--url',
                                  default='http://localhost:8230')
+        self.parser.add_argument('--user')
+        self.parser.add_argument('--auth-store', dest='auth_store',
+                                 default='~/.configdb.auth')
+        self.parser.add_argument('--no-auth-store', dest='no_auth_store',
+                                 action='store_true')
         self.parser.add_argument('--debug', action='store_true')
 
     def _init_subparser(self, entity, parser):
@@ -215,7 +220,11 @@ class Parser(object):
         if args.debug:
             logging.getLogger().setLevel(logging.DEBUG)
 
-        conn = connection.Connection(args.url, self.schema)
+        auth_file = (os.path.expanduser(args.auth_store)
+                     if not args.no_auth_store else None)
+        conn = connection.Connection(args.url, self.schema,
+                                     username=args.user,
+                                     auth_file=auth_file)
         args._action.run(conn, args._entity, args)
 
 

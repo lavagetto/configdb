@@ -2,6 +2,7 @@ import mox
 import os
 import tempfile
 import shutil
+from configdb.db import schema
 from configdb.client import cli
 from configdb.client import connection
 from configdb.tests import *
@@ -69,7 +70,8 @@ class CliTest(mox.MoxTestBase):
         os.getenv('SCHEMA_FILE').AndReturn(schema_file)
 
         self.conn = self.mox.CreateMockAnything()
-        connection.Connection(mox.IsA(str), mox.IgnoreArg()
+        connection.Connection(mox.IsA(str), mox.IsA(schema.Schema),
+                              username=None, auth_file=mox.IsA(str)
                               ).AndReturn(self.conn)
 
     def test_get_object(self):
