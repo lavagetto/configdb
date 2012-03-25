@@ -125,3 +125,6 @@ class Connection(object):
 
     def update(self, entity_name, object_name, data):
         return self._call(entity_name, 'update', object_name, data)
+
+    def get_audit(self, query):
+        return self._request(['audit'], query)

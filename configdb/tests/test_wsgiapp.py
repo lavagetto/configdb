@@ -47,6 +47,9 @@ class WsgiTest(TestBase):
             u = db.create('user', {'name': 'user1',
                                    'last_login': datetime(2006, 1, 1)}, s)
             a.roles.append(r)
+            db.add_audit('host', 'obz', 'create', {'ip': '1.2.3.4',
+                                                   'name': 'obz'},
+                         acl.AuthContext('admin'), s)
 
     def _parse(self, rv):
         self.assertEquals(200, rv.status_code)
@@ -149,6 +152,19 @@ class WsgiTest(TestBase):
         self.assertEquals(200, rv.status_code)
         data = json.loads(rv.data)
         self.assertEquals({'ok': True, 'result': True}, data)
+
+    def test_get_audit(self):
+        self._login()
+        result = self._parse(
+            self.app.post('/audit',
+                          data=json.dumps({'entity': 'host',
+                                           'object': 'obz'}),
+                          content_type='application/json'))
+        self.assertTrue(isinstance(result, list))
+        self.assertEquals(1, len(result))
+        self.assertEquals('host', result[0]['entity'])
+        self.assertEquals('create', result[0]['op'])
+        self.assertEquals('admin', result[0]['user'])
 
     def test_get_schema(self):
         self._login()

@@ -12,10 +12,10 @@ class SqlAlchemyGenerator(object):
     def _audit_table_def(self):
         return """
 audit_table = Table('_audit', Base.metadata,
-    Column('who', String(64), index=True),
+    Column('user', String(64), index=True),
     Column('entity', String(64), index=True),
     Column('object', String(64), index=True),
-    Column('what', String(8), index=True),
+    Column('op', String(8), index=True),
     Column('stamp', DateTime(), default=datetime.now),
     Column('data', UnicodeText()))
 """

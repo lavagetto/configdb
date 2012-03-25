@@ -125,7 +125,7 @@ class DbApiTest(TestBase):
 
         result = list(self.api.get_audit({'entity': 'host',
                                           'object': 'obz',
-                                          'what': 'update'}, self.ctx))
+                                          'op': 'update'}, self.ctx))
         self.assertEquals(1, len(result))
 
     def test_update_rename(self):
@@ -217,7 +217,7 @@ class DbApiTest(TestBase):
 
         result = list(self.api.get_audit({'entity': 'host',
                                           'object': 'obz',
-                                          'what': 'delete'}, self.ctx))
+                                          'op': 'delete'}, self.ctx))
         self.assertEquals(1, len(result))
 
     def test_delete_twice(self):
@@ -257,7 +257,7 @@ class DbApiTest(TestBase):
     def test_get_audit_requires_entity_spec(self):
         self.assertRaises(exceptions.NotFound,
                           self.api.get_audit,
-                          {'who': 'admin'},
+                          {'user': 'admin'},
                           self.ctx)
 
     def test_get_audit_requires_existing_entity(self):
@@ -273,5 +273,5 @@ class DbApiTest(TestBase):
         auth_ctx = acl.AuthContext('bad_user')
         self.assertRaises(exceptions.AclError,
                           self.api.get_audit,
-                          {'entity': 'private', 'what': 'test'},
+                          {'entity': 'private', 'op': 'create'},
                           auth_ctx)

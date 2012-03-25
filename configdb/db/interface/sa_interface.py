@@ -62,9 +62,9 @@ class SqlAlchemyDb(base.DbInterface):
         ins = self._objs['audit_table'].insert()
         session.execute(ins, {'entity': entity_name,
                               'object': object_name,
-                              'what': operation,
+                              'op': operation,
                               'data': json.dumps(data) if data else None,
-                              'who': auth_ctx.get_username()})
+                              'user': auth_ctx.get_username()})
 
     def get_audit(self, query, session):
         audit_table = self._objs['audit_table']

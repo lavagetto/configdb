@@ -219,6 +219,17 @@ class ConnectionTest(TestBase):
         conn = self._connect()
         self.assertEquals(True, conn.delete('host', 'obz'))
 
+    def test_get_audit(self):
+        self._mock_request('/audit', {'entity': 'host', 'object': 'obz'},
+                           [{'entity': 'host', 'object': 'obz',
+                             'user': 'admin', 'op': 'create',
+                             'stamp': '2006-01-01T00:00:00'}])
+        self.mox.ReplayAll()
+
+        conn = self._connect()
+        result = conn.get_audit({'entity': 'host', 'object': 'obz'})
+        self.assertEquals(1, len(result))
+
     def test_app_error(self):
         self.opener.open(
             mox.IsA(urllib2.Request)).AndReturn(ErrorResponse())
