@@ -9,6 +9,11 @@ from configdb.db.interface import base
 
 
 class LevelDbRelationProxy(object):
+    """Proxy for a database relation attribute.
+
+    Supports the list method append() and the 'in' operator, used both
+    with a LevelDbObject instance or a string.
+    """
 
     def __init__(self, objs):
         if objs is None:
@@ -25,6 +30,7 @@ class LevelDbRelationProxy(object):
 
 
 class LevelDbObject(object):
+    """Lightweight database object instance."""
 
     def __init__(self, entity, data):
         self._entity = entity.name
@@ -76,7 +82,15 @@ def session_manager(db):
 
 
 class LevelDbInterface(base.DbInterface):
-    """Interface to a local LevelDB database."""
+    """Interface to a local LevelDB database.
+
+    The interface is pretty simple at the moment, but it's a good
+    example of how to implement a database backend for configdb.
+
+    We store lightweight LevelDbObject instances in the database,
+    representing relations with sets of names.  Object serialization
+    is done using the 'pickle' module.
+    """
 
     def __init__(self, path, schema, **kwargs):
         self.db = leveldb.LevelDB(path, **kwargs)
@@ -114,13 +128,10 @@ class LevelDbInterface(base.DbInterface):
         def _match(x):
             for key, value in attrs.iteritems():
                 xvalue = getattr(x, key, None)
-                field = entity.fields[key]
-                if field.is_relation():
-                    if xvalue is not None:
-                        any_matches = any([x in xvalue for x in value])
-                        if not any_matches:
-                            return False
-                if xvalue != value:
+                if isinstance(xvalue, LevelDbRelationProxy):
+                    if not xvalue._objs.intersection(set(value)):
+                        return False
+                elif xvalue != value:
                     return False
             return True
 
