@@ -1,14 +1,34 @@
 import cookielib
 import getpass
+import gzip
 import json
 import logging
 import os
 import sys
 import urllib
 import urllib2
+import StringIO
 from configdb import exceptions
 
 log = logging.getLogger(__name__)
+
+
+class GzipProcessor(urllib2.BaseHandler):
+
+    def http_request(self, req):
+        req.add_header('Accept-Encoding', 'gzip')
+        return req
+
+    def http_response(self, req, resp):
+        if resp.headers.get('content-encoding') == 'gzip':
+            gz = gzip.GzipFile(
+                fileobj=StringIO.StringIO(resp.read()),
+                mode='r')
+            resp.read = gz.read
+        return resp
+
+    https_request = http_request
+    https_response = http_response
 
 
 class Connection(object):
@@ -36,7 +56,8 @@ class Connection(object):
         self._username = username or getpass.getuser()
         self._password = password
         self._opener = urllib2.build_opener(
-            urllib2.HTTPCookieProcessor(self._cj))
+            urllib2.HTTPCookieProcessor(self._cj),
+            GzipProcessor())
 
     def _request(self, path, data=None, logged_in=False):
         """Perform a HTTP request.

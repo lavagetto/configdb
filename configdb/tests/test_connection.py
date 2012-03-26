@@ -48,7 +48,8 @@ class ConnectionTest(TestBase):
         self.mox = mox.Mox()
         self.opener = self.mox.CreateMockAnything()
         self.mox.StubOutWithMock(urllib2, 'build_opener')
-        urllib2.build_opener(mox.IsA(urllib2.HTTPCookieProcessor)
+        urllib2.build_opener(mox.IsA(urllib2.HTTPCookieProcessor),
+                             mox.IsA(connection.GzipProcessor)
                              ).AndReturn(self.opener)
 
     def tearDown(self):
