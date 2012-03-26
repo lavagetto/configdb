@@ -15,8 +15,9 @@ import logging
 from flask import Flask, Blueprint, request, jsonify, current_app, \
     session, abort, g
 from configdb import exceptions
-from configdb.db import schema
+from configdb.db import acl
 from configdb.db import db_api
+from configdb.db import schema
 from configdb.db.interface import sa_interface
 from configdb.server import auth
 
@@ -87,12 +88,15 @@ def set_api():
 def authenticate(fn):
     @functools.wraps(fn)
     def _auth_wrapper(*args, **kwargs):
-        if (session.new
-            or (session.get('auth_ok') != True)
-            or not session.get('auth_token')):
-            abort(403)
-        auth_ctx_fn = current_app.config['AUTH_CONTEXT_FN']
-        g.auth_ctx = auth_ctx_fn(g.api, session['auth_token'])
+        if current_app.config.get('AUTH_BYPASS'):
+            g.auth_ctx = acl.AuthContext(None)
+        else:
+            if (session.new
+                or (session.get('auth_ok') != True)
+                or not session.get('auth_token')):
+                abort(403)
+            auth_ctx_fn = current_app.config['AUTH_CONTEXT_FN']
+            g.auth_ctx = auth_ctx_fn(g.api, session['auth_token'])
         return fn(*args, **kwargs)
     return _auth_wrapper
 

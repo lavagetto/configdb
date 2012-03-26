@@ -38,6 +38,7 @@ class WsgiTest(TestBase):
         app.config['AUTH_FN'] = auth_fn
         app.config['AUTH_CONTEXT_FN'] = auth_context_fn
         app.config['SECRET_KEY'] = 'test key'
+        self.wsgiapp = app
         self.app = app.test_client()
 
         db = app.api.db
@@ -71,6 +72,11 @@ class WsgiTest(TestBase):
     def test_unauthenticated_request(self):
         rv = self.app.get('/get/host/obz')
         self.assertEquals(403, rv.status_code)
+
+    def test_auth_bypass(self):
+        self.wsgiapp.config['AUTH_BYPASS'] = True
+        rv = self.app.get('/get/host/obz')
+        self.assertEquals(200, rv.status_code)
 
     def test_wrap_exceptions(self):
         self._login()
