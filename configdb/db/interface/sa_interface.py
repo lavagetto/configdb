@@ -25,7 +25,7 @@ def unshared_session_manager(sessionmaker):
         s.commit()
 
 
-class SqlAlchemyDb(base.DbInterface):
+class SqlAlchemyDbInterface(base.DbInterface):
     """Interface to an SQL database using SQLAlchemy."""
 
     def __init__(self, uri, schema, schema_dir=None):

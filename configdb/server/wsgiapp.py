@@ -18,7 +18,6 @@ from configdb import exceptions
 from configdb.db import acl
 from configdb.db import db_api
 from configdb.db import schema
-from configdb.db.interface import sa_interface
 from configdb.server import auth
 
 log = logging.getLogger(__name__)
@@ -206,9 +205,20 @@ def make_app(config={}):
 
     # Initialize the database interface.
     schema_obj = schema.Schema(app.config['SCHEMA_JSON'])
-    db = sa_interface.SqlAlchemyDb(
-        app.config.get('DB_URI', 'sqlite:///:memory:'),
-        schema_obj)
+    db_driver = app.config.get('DB_DRIVER', 'sqlalchemy')
+    if db_driver == 'sqlalchemy':
+        from configdb.db.interface import sa_interface
+        db = sa_interface.SqlAlchemyDbInterface(
+            app.config.get('DB_URI', 'sqlite:///:memory:'),
+            schema_obj)
+    elif db_driver == 'leveldb':
+        from configdb.db.interface import leveldb_interface
+        db = leveldb_interface.LevelDbInterface(
+            app.config['DB_URI'],
+            schema_obj)
+    else:
+        raise Exception('DB_DRIVER not one of "sqlalchemy" or "leveldb"')
+
     app.api = db_api.AdmDbApi(schema_obj, db)
 
     return app

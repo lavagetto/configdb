@@ -11,8 +11,9 @@ class DbApiTest(TestBase):
     def setUp(self):
         TestBase.setUp(self)
         self.schema = self.get_schema()
-        self.db = sa_interface.SqlAlchemyDb('sqlite:///:memory:',
-                                            self.schema)
+        self.db = sa_interface.SqlAlchemyDbInterface(
+            'sqlite:///:memory:',
+            self.schema)
 
         with self.db.session() as s:
             a = self.db.create('host', {'ip': '1.2.3.4', 'name': 'obz'}, s)
