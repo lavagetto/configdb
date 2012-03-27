@@ -1,6 +1,7 @@
 import argparse
 import getpass
 import inflect
+import json
 import logging
 import re
 import os
@@ -24,6 +25,11 @@ def read_password(value):
 def read_from_file(value):
     with open(value, 'r') as fd:
         return fd.read()
+
+
+def pprint(value):
+    """Pretty-print value as JSON."""
+    print json.dumps(value, sort_keys=True, indent=4)
 
 
 class Action(object):
@@ -144,7 +150,7 @@ class GetAction(Action):
 
     def run(self, conn, entity, args):
         obj = conn.get(entity.name, args._name)
-        print obj
+        pprint(obj)
 
 
 class FindAction(Action):
@@ -158,6 +164,7 @@ class FindAction(Action):
     def run(self, conn, entity, args):
         query = self.get_standard_entity_fields(entity, args)
         objects = conn.find(entity.name, query)
+        pprint(objects)
 
 
 class DeleteAction(Action):
@@ -189,8 +196,7 @@ class AuditAction(object):
                      for x in self.AUDIT_ATTRS
                      if getattr(args, x))
         log.info('audit query: %s', query)
-        for entry in conn.get_audit(query):
-            print entry
+        pprint(list(conn.get_audit(query)))
 
 
 class Parser(object):
