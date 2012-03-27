@@ -19,21 +19,6 @@ by running more app servers (they are completely stateless).
 
 
 
-Database Storage
-----------------
-
-The actual database backend is structured as a plugin, but at the
-moment only a SQL-based backend is available. It will support any SQL
-database known to `SQLAlchemy`_.
-
-For testing purposes, you can run a standalone instance of the
-database HTTP API server with::
-
-    $ env APP_CONFIG=path/to/my.config configdb-api-server
-
-which will start a very simple HTTP server on port 3000.
-
-
 
 Deployment
 ----------
@@ -52,8 +37,8 @@ These are the configuration options known to the application:
 `SCHEMA_FILE`
   Location of your JSON schema definition. This option is required.
 
-`DB_URI`
-  Database connection string (it will be passed to SQLAlchemy).
+`DB_DRIVER`, `DB_URI`
+  Storage backend configuration, see `Database Storage`_ for details.
 
 `AUTH_FN`, `AUTH_CONTEXT_FN`
   See the Authentication_ chapter for details.
@@ -62,6 +47,47 @@ You will also need to set the Flask `SECRET_KEY` configuration option
 to something sufficiently random.  If you're running more than one app
 server, ensure that the value of `SECRET_KEY` is consistent, otherwise
 you'll introduce arbitrary authentication errors.
+
+
+
+Database Storage
+----------------
+
+The database storage can be configured using two configuration
+variables:
+
+`DB_DRIVER`
+  Select the storage driver (which is `sqlalchemy` by default)
+
+`DB_URI`
+  Connection string, syntax depends on the specific storage
+  driver selected.
+
+The actual database backend is structured as a plugin, there are 
+currently two database backends available:
+
+`sqlalchemy` (default)
+  This is the default SQL-based backend. It will support any SQL
+  database known to `SQLAlchemy`_. The `DB_URI` should be a 
+  SQLAlchemy connection string.
+
+`leveldb`
+  An experimental backend using Google's `LevelDB`_. Mostly
+  written to demonstrate how to write a storage backend for a
+  pure key-value store. You'll need the `py-leveldb`_ Python
+  package for this to work. Here `DB_URI` must point to a path
+  on the local filesystem, where the database will be created.
+  Note that, since LevelDB provides no process-level locking, you
+  can only have one database HTTP API process accessing the
+  database at once, so make sure to pick a suitable deployment
+  model.
+
+For testing purposes, you can run a standalone instance of the
+database HTTP API server with::
+
+    $ env APP_CONFIG=path/to/my.config configdb-api-server
+
+which will start a very simple HTTP server on port 3000.
 
 
 
@@ -150,3 +176,5 @@ Some standard implementations of these functions are provided in the
 
 .. _Flask documentation: http://flask.pocoo.org/docs/
 .. _SQLAlchemy: http://sqlalchemy.org/
+.. _LevelDB: http://code.google.com/p/leveldb/
+.. _py-leveldb: http://code.google.com/p/py-leveldb/
