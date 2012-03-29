@@ -69,6 +69,10 @@ class %(class_name)s(Base):
             if sa_attr in attrs:
                 sa_attrs[sa_attr] = attrs.pop(sa_attr)
 
+        # The 'name' field is _always_ the primary key.
+        if field.name == 'name':
+            sa_attrs['primary_key'] = True
+
         # Generate field definition (SA declarative style).
         args = [sa_type] + [
             '%s=%s' % (k, v) for k, v in sa_attrs.items()]
