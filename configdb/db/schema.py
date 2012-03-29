@@ -111,6 +111,9 @@ class Entity(acl.AclMixin):
                 self.set_acl(attrs)
             elif name == '_help':
                 self.description = attrs
+            elif name == 'id':
+                raise exceptions.SchemaError(
+                    'the "id" field is reserved')
             elif FIELD_NAME_PATTERN.match(name):
                 # Set some defaults for the special 'name' field.
                 if name == 'name':
