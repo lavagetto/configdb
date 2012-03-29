@@ -47,6 +47,8 @@ class %(class_name)s(Base):
         type_map = {
             'datetime': 'DateTime',
             'bool': 'Boolean',
+            'int': 'Integer',
+            'number': 'Float',
             'string': 'Unicode',
             'text': 'UnicodeText',
             'binary': 'BLOB',
