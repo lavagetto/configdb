@@ -6,7 +6,7 @@ from configdb.db import acl
 from configdb.db import validation
 
 ENTITY_NAME_PATTERN = re.compile(r'^[-_a-z0-9]+$')
-FIELD_NAME_PATTERN = re.compile(r'^[a-z][-_a-z0-9]*$')
+FIELD_NAME_PATTERN = re.compile(r'^[a-z][_a-z0-9]*$')
 DEFAULT_ACL = {'r': '*', 'w': '*'}
 
 
