@@ -89,7 +89,7 @@ class UpdateAction(Action):
 
     def __init__(self, entity, parser):
         parser.add_argument('_name', metavar='NAME')
-        has_relations = None
+        self.has_relations = None
         for field in entity.fields.itervalues():
             descr = field.attrs.get('description', '')
             if field.is_relation():
@@ -98,17 +98,17 @@ class UpdateAction(Action):
                     ' ' if descr else '')
                 parser.add_argument(opt_name, help=descr,
                                     dest=field.name)
-                has_relations = True
+                self.has_relations = True
             else:
                 opt_name = '--%s' % field.name
                 parser.add_argument(opt_name, help=descr,
                                     dest=field.name)
-        if has_relations:
+        if self.has_relations:
             parser.add_argument('--add', action='store_true')
             parser.add_argument('--delete', action='store_true')
 
     def run(self, conn, entity, args):
-        if args.add and args.delete:
+        if self.has_relations and args.add and args.delete:
             raise CmdError('Can\'t specify --add and --delete together')
 
         obj = conn.get(entity.name, args._name)
