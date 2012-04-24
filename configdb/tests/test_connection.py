@@ -111,6 +111,21 @@ class ConnectionTest(TestBase):
         self.assertEquals({'name': 'obz'}, conn.get('host', 'obz'))
         self.assertTrue(os.path.exists(auth_file))
 
+    def test_login_auth_file_write_failure_is_not_fatal(self):
+        self._mock_login()
+        self.mox.ReplayAll()
+
+        auth_file = os.path.join(self._tmpdir, 'cookies')
+        conn = self._connect(username='admin', password='pass',
+                             auth_file=auth_file)
+
+        def _error(self, x):
+            raise Exception('error')
+        conn._cj.save = _error
+
+        self.assertEquals({'name': 'obz'}, conn.get('host', 'obz'))
+        self.assertFalse(os.path.exists(auth_file))
+
     def test_login_guess_user_and_ask_password(self):
         self.mox.StubOutWithMock(getpass, 'getuser')
         getpass.getuser().InAnyOrder('login').AndReturn('admin')
