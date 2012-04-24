@@ -34,6 +34,7 @@ def user_auth_context_fn(user_entity_name='user'):
         if user_obj:
             ctx.set_self(user_obj)
         return ctx
+    return _user_auth_context_fn
 
 
 def external_auth_fn(api, data):
