@@ -1,0 +1,9 @@
+
+* Support schema changes in SQL backend. While the right way to do this
+  is to declare migrations, it would fit badly with the generic abstraction:
+  we should probably just detect the simple table/attribute changes, and
+  leave the more complex diffs (data-preserving attribute renaming) to
+  the user.
+
+* A Zookeeper backend would be nice.
+
