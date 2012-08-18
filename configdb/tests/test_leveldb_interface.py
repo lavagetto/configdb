@@ -43,7 +43,7 @@ class TestSaInterface(TestBase):
         db = self.init_db()
         self.load_some_data(db)
 
-        r = list(db.find('host', {'name': 'obz'}))
+        r = list(db.find('host', {'name': {'type': 'eq', 'arg': 'obz'}}))
         self.assertEquals(1, len(r))
         self.assertEquals('obz', r[0].name)
 
@@ -51,6 +51,6 @@ class TestSaInterface(TestBase):
         db = self.init_db()
         self.load_some_data(db)
 
-        r = list(db.find('host', {'roles': ['zzzz']}))
+        r = list(db.find('host', {'roles': [{'type': 'eq', 'arg': 'zzzz'}]}))
         self.assertEquals([], r)
         

@@ -84,27 +84,49 @@ class SqlAlchemyDbInterface(base.DbInterface):
         return session.query(self._get_class(entity_name)).filter_by(
             name=object_name).first()
 
+    def get_approximate_by_name(self, entity_name, object_name, session=None):
+        if session is None:
+            session = self.Session
+        cls = self._get_class(entity_name)
+        return session.query(self._get_class(entity_name)).filter(cls.name.like( u"%%%s%%" % object_name)).first()
+
+    def _substring_match(self, data, query):
+        (field, classattr, session) = data
+        if field.is_relation():
+            return self.get_approximate_by_name(
+                            field.remote_name, query, session)
+        return classattr.like( u"%%%s%%" % query )
+
+    def _exact_match(self, data, query):
+        (field, classattr, session) = data
+        if field.is_relation():
+            return self.get_by_name(
+                            field.remote_name, query, session)
+        return classattr ==  query
+        
+        
+    
     def find(self, entity_name, attrs, session=None):
         if session is None:
             session = self.Session
         classobj = self._get_class(entity_name)
         entity = self._schema.get_entity(entity_name)
         query = session.query(classobj)
-        for qattr, qvalue in attrs.iteritems():
+        for qattr, qdata in attrs.iteritems():
             classattr = getattr(classobj, qattr)
             field = entity.fields[qattr]
-            if field.is_relation():
+            if field.is_relation():                
                 # Make relational queries work by name. If the field
                 # is a relation, the value will be a list.
-                for rvalue in qvalue:
-                    rel_obj = self.get_by_name(
-                        field.remote_name, rvalue, session)
+                for qvalue in qdata:
+                    rel_obj = self._proxy_match((field, classattr, session), qvalue)
                     if not rel_obj:
-                        raise exceptions.NotFound('%s=%s' % (qattr, rvalue))
+                        raise exceptions.NotFound('%s=%s' % (qattr, qvalue['arg']))
                     query = query.filter(classattr.contains(rel_obj))
             else:
-                query = query.filter(classattr == qvalue)
+                query = query.filter(self._proxy_match((field, classattr, session), qdata))
         return query
+
 
     def delete(self, entity_name, object_name, session):
         session.delete(self.get_by_name(entity_name, object_name, session))

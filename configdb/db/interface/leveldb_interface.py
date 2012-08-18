@@ -126,14 +126,14 @@ class LevelDbInterface(base.DbInterface):
         entity = self.schema.get_entity(entity_name)
 
         def _match(x):
-            for key, value in attrs.iteritems():
+            for key, query in attrs.iteritems():
                 xvalue = getattr(x, key, None)
-                if isinstance(xvalue, LevelDbRelationProxy):
-                    if not xvalue._objs.intersection(set(value)):
+                if not isinstance(query, list):
+                    query = [query]
+                for q in query:
+                    if not self._proxy_match(xvalue, q):
                         return False
-                elif xvalue != value:
-                    return False
-            return True
+                return True
 
         cursor = self.db.RangeIter('%s:' % entity_name,
                                    '%s:\xff' % entity_name)
@@ -150,4 +150,20 @@ class LevelDbInterface(base.DbInterface):
 
     def delete(self, entity_name, object_name, session):
         session.delete(self.get_by_name(entity_name, object_name, session))
+
+    def _exact_match(self, xvalue, value):
+        """
+        Exact matching comparison
+        """
+        if isinstance(xvalue, LevelDbRelationProxy):
+            return bool(xvalue._objs.intersection(set([value])))
+        else: 
+            return xvalue == value
+
+    def _substring_match(self, xvalue, value):
+        if isinstance(xvalue, LevelDbRelationProxy):
+            if [obj for obj in xvalue._objs if obj.find(value) >= 0]:
+                return True
+        else:
+            return (xvalue.find(value) >= 0)
 

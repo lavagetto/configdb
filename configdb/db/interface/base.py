@@ -25,3 +25,18 @@ class DbInterface(object):
     def create(self, class_name, attrs, session):
         """Create a new instance of an entity."""
 
+    def _proxy_match(self, data, query):
+        """Proxy method to choose between different querying methods.
+
+        In this method, the meaning of 'data' is really different for
+        different interfaces.
+        """
+        qs = query['arg']
+        qt = query['type']
+        if qt == 'eq':
+            return self._exact_match(data, qs)
+        elif qt == 'substring':
+            return self._substring_match(data, qs)
+        else:
+            raise NotImplementedError("Query method %s is not implemented" % qt)
+
