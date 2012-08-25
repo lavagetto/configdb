@@ -50,9 +50,6 @@ class InMemoryObject(object):
         self._entity_name = entity.name
         for field in entity.fields.itervalues():
             value = data.get(field.name)
-            if value is None and not field.attrs.get('nullable', True):
-                raise exceptions.IntegrityError(
-                    'NULL value for non-nullable field "%s"' % field.name)
             if field.is_relation():
                 value = InMemoryRelationProxy(value)
             setattr(self, field.name, value)

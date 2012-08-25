@@ -59,7 +59,15 @@ class DbApiTestBase(object):
                           {'name': {'type': 'substring', 'value': 'bz'}},
                           self.ctx))
         self.assertEquals(1, len(result))
-        self.assertEquals('obz', result[0].name)    
+        self.assertEquals('obz', result[0].name)
+
+    def test_find_regexp(self):
+        result = list(
+            self.api.find('host',
+                          {'name': {'type': 'regexp', 'pattern': '^o.*$'}},
+                          self.ctx))
+        self.assertEquals(1, len(result))
+        self.assertEquals('obz', result[0].name)
 
     def test_find_relation(self):
         result = list(
@@ -177,10 +185,12 @@ class DbApiTestBase(object):
                                           'op': 'update'}, self.ctx))
         self.assertEquals(1, len(result))
 
+    # FIXME: should renaming even work?
+    #
     # def test_update_rename(self):
     #     result = self.api.update('host', 'obz', {'name': 'utz'}, self.ctx)
     #     self.assertTrue(result)
-
+    #
     #     self.assertEquals('utz',
     #                       self.api.get('host', 'utz', self.ctx).name)
     #     self.assertRaises(exceptions.NotFound,
