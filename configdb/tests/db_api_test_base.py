@@ -1,37 +1,39 @@
 from configdb import exceptions
-from configdb.tests import *
 from configdb.db import db_api
 from configdb.db import acl
-from configdb.db.interface import sa_interface
-import sqlalchemy
 
 
-class DbApiTest(TestBase):
+class DbApiTestBase(object):
 
     def setUp(self):
-        TestBase.setUp(self)
-        self.schema = self.get_schema()
-        self.db = sa_interface.SqlAlchemyDbInterface(
-            'sqlite:///:memory:',
-            self.schema)
+        self.db = self.init_db()
 
         with self.db.session() as s:
             a = self.db.create('host', {'ip': u'1.2.3.4', 'name': u'obz'}, s)
             r = self.db.create('role', {'name': u'role1'}, s)
             a.roles.append(r)
+            s.add(a)
+
             r2 = self.db.create('role', {'name': u'role2'}, s)
             u = self.db.create('user', {'name': u'testuser'}, s)
             sk = self.db.create('ssh_key', {'name': u'testuser@host',
                                             'key': u'KEY_DATA'}, s)
             u.ssh_keys.append(sk)
 
-        self.api = db_api.AdmDbApi(self.schema, self.db)
+        self.api = db_api.AdmDbApi(self.get_schema(), self.db)
         self.ctx = acl.AuthContext('admin', ['admins'])
+
+    def init_db(self):
+        raise NotImplementedError()
 
     def test_get(self):
         result = self.api.get('host', 'obz', self.ctx)
         self.assertTrue(result is not None)
         self.assertEquals('obz', result.name)
+
+        result = self.api.get('role', 'role1', self.ctx)
+        self.assertTrue(result is not None)
+        self.assertEquals('role1', result.name)
 
     def test_get_nonexisting_obj_returns_none(self):
         self.assertRaises(exceptions.NotFound,
@@ -44,62 +46,79 @@ class DbApiTest(TestBase):
                           'whrarggh', 'obz', self.ctx)
 
     def test_find(self):
-        result = self.api.find('host', {'name': 'obz'}, self.ctx)
-        self.assertTrue(result is not None)
+        result = list(
+            self.api.find('host',
+                          {'name': {'type': 'eq', 'value': 'obz'}},
+                          self.ctx))
         self.assertEquals(1, len(result))
         self.assertEquals('obz', result[0].name)
 
     def test_find_substring(self):
-        result = self.api.find('host', {'name': '~bz'}, self.ctx)
-        self.assertTrue(result is not None)
+        result = list(
+            self.api.find('host',
+                          {'name': {'type': 'substring', 'value': 'bz'}},
+                          self.ctx))
         self.assertEquals(1, len(result))
         self.assertEquals('obz', result[0].name)    
 
     def test_find_relation(self):
-        result = self.api.find('host', {'roles': 'role1'}, self.ctx)
-        self.assertTrue(result is not None)
+        result = list(
+            self.api.find('host',
+                          {'roles': {'type': 'eq', 'value': 'role1'}},
+                          self.ctx))
         self.assertEquals(1, len(result))
         self.assertEquals('obz', result[0].name)
 
     def test_find_relation_substring(self):
-        result = self.api.find('host', {'roles': '~ole1'}, self.ctx)
-        self.assertTrue(result is not None)
+        result = list(
+            self.api.find('host',
+                          {'roles': {'type': 'substring', 'value': 'ole1'}},
+                          self.ctx))
         self.assertEquals(1, len(result))
         self.assertEquals('obz', result[0].name)
 
-    def test_find_relation_as_list(self):
-        result = self.api.find('host', {'roles': ['role1']}, self.ctx)
-        self.assertTrue(result is not None)
+    def test_find_empty_query(self):
+        result = list(
+            self.api.find('role', {}, self.ctx))
+        self.assertEquals(2, len(result))
+
+    def test_find_multiple_criteria(self):
+        result = list(
+            self.api.find('host',
+                          {'roles': {'type': 'substring', 'value': 'ole1'},
+                           'name': {'type': 'eq', 'value': 'obz'}},
+                          self.ctx))
         self.assertEquals(1, len(result))
         self.assertEquals('obz', result[0].name)
 
-    def test_find_relation_substring_as_list(self):
-        result = self.api.find('host', {'roles': ['~ole1']}, self.ctx)
-        self.assertTrue(result is not None)
-        self.assertEquals(1, len(result))
-        self.assertEquals('obz', result[0].name)
+    def test_find_bad_query_spec_unknown_type(self):
+        self.assertRaises(exceptions.QueryError,
+                          self.api.find,
+                          'host', {'roles': {'type': 'unknown'}},
+                          self.ctx)
 
-    def test_find_mixed_methods(self):
-        result = self.api.find('host', {'roles': ['~ole1'], 'name': 'obz'}, self.ctx)
-        self.assertTrue(result is not None)
-        self.assertEquals(1, len(result))
-        self.assertEquals('obz', result[0].name)
+    def test_find_bad_query_spec_missing_value(self):
+        self.assertRaises(exceptions.QueryError,
+                          self.api.find,
+                          'host', {'roles': {'type': 'eq'}},
+                          self.ctx)
+
+    def test_find_bad_query_spec_unknown_field(self):
+        self.assertRaises(exceptions.ValidationError,
+                          self.api.find,
+                          'host', {'unknown': {'type': 'eq', 'value': 'yeah'}},
+                          self.ctx)
 
     def test_find_nonexisting_entity_raises_notfound(self):
         self.assertRaises(exceptions.NotFound,
                           self.api.find,
-                          'noent', {'name': 'blah'}, self.ctx)
+                          'noent', {'name': {'type': 'eq', 'value': 'blah'}},
+                          self.ctx)
 
     def test_find_nonexisting_substring_raises_notfound(self):
         self.assertRaises(exceptions.NotFound,
                           self.api.find,
                           'noent', {'name': '~lah'}, self.ctx)
-
-    def test_find_validation_error(self):
-        self.assertRaises(exceptions.ValidationError,
-                          self.api.find,
-                          'host', {'ip': '299.0.0.1'},
-                          self.ctx)
 
     def test_create_simple(self):
         host_data = {'name': 'utz', 'ip': '2.3.4.5'}
@@ -158,14 +177,14 @@ class DbApiTest(TestBase):
                                           'op': 'update'}, self.ctx))
         self.assertEquals(1, len(result))
 
-    def test_update_rename(self):
-        result = self.api.update('host', 'obz', {'name': 'utz'}, self.ctx)
-        self.assertTrue(result)
+    # def test_update_rename(self):
+    #     result = self.api.update('host', 'obz', {'name': 'utz'}, self.ctx)
+    #     self.assertTrue(result)
 
-        self.assertEquals('utz',
-                          self.api.get('host', 'utz', self.ctx).name)
-        self.assertRaises(exceptions.NotFound,
-                          self.api.get, 'host', 'obz', self.ctx)
+    #     self.assertEquals('utz',
+    #                       self.api.get('host', 'utz', self.ctx).name)
+    #     self.assertRaises(exceptions.NotFound,
+    #                       self.api.get, 'host', 'obz', self.ctx)
 
     def test_update_modify_relation(self):
         self.assertTrue(
@@ -204,11 +223,6 @@ class DbApiTest(TestBase):
                           'user', 'testuser',
                           {'last_login': 'not_a_valid_iso_timestamp'}, 
                           self.ctx)
-
-    def test_update_sql_integrity_error(self):
-        self.assertRaises(sqlalchemy.exceptions.IntegrityError,
-                          self.api.update,
-                          'host', 'obz', {'name': None}, self.ctx)
 
     def test_update_unknown_entity_error(self):
         self.assertRaises(exceptions.NotFound,
@@ -273,7 +287,6 @@ class DbApiTest(TestBase):
 
     def test_self_acl(self):
         testuser = self.db.get_by_name('user', 'testuser')
-        print 'ID:', testuser.id
         auth_ctx = acl.AuthContext(testuser.name)
         auth_ctx.set_self(testuser)
 

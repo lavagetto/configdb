@@ -73,7 +73,7 @@ class StubObj(acl.AclMixin):
 class StubDbObj(object):
 
     def __init__(self, objid, parents=None):
-        self.id = objid
+        self.name = objid
         self.parents = parents
 
 
@@ -83,7 +83,7 @@ class AclCheckTest(TestBase):
         TestBase.setUp(self)
         self.ctx = acl.AuthContext('admin', ['admins'])
         self.bad_ctx = acl.AuthContext('bad_user')
-        self.dbobj = StubDbObj(42)
+        self.dbobj = StubDbObj('test_user')
 
     def test_check_default(self):
         obj = StubObj({})

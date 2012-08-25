@@ -1,7 +1,16 @@
+from configdb import exceptions
+from configdb.db import query
+
 
 
 class DbInterface(object):
     """A generic interface to a database."""
+
+    QUERY_TYPE_MAP = {
+        'eq': query.Equals,
+        'substring': query.SubstringMatch,
+        'regexp': query.RegexpMatch,
+        }
 
     def session(self):
         """Return a session object.
@@ -16,8 +25,8 @@ class DbInterface(object):
     def get_by_name(self, class_name, object_name, session):
         """Return an instance of an entity, by name."""
 
-    def find(self, class_name, attrs, session):
-        """Query an entity according to an attribute-wise query."""
+    def find(self, class_name, query, session):
+        """Query an entity."""
 
     def delete(self, class_name, object_name, session):
         """Delete an instance."""
@@ -25,18 +34,26 @@ class DbInterface(object):
     def create(self, class_name, attrs, session):
         """Create a new instance of an entity."""
 
-    def _proxy_match(self, data, query):
-        """Proxy method to choose between different querying methods.
+    def parse_query_spec(self, query_spec):
+        """Parse a query spec (a dictionary)."""
+        try:
+            return self.QUERY_TYPE_MAP[query_spec['type']](query_spec)
+        except KeyError:
+            raise exceptions.QueryError('invalid query spec')
 
-        In this method, the meaning of 'data' is really different for
-        different interfaces.
-        """
-        qs = query['arg']
-        qt = query['type']
-        if qt == 'eq':
-            return self._exact_match(data, qs)
-        elif qt == 'substring':
-            return self._substring_match(data, qs)
-        else:
-            raise NotImplementedError("Query method %s is not implemented" % qt)
-
+    def _run_query(self, entity, query, items):
+        """Apply a query filter to a list of items."""
+        for item in items:
+            ok = True
+            for field_name, q in query.iteritems():
+                field = entity.fields[field_name]
+                value = getattr(item, field_name, None)
+                if field.is_relation():
+                    if value is None or not any(q.match(v.name) for v in value):
+                        ok = False
+                        break
+                elif not q.match(value):
+                    ok = False
+                    break
+            if ok:
+                yield item

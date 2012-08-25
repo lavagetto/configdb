@@ -25,7 +25,7 @@ class AuthContext(object):
 
     def is_self(self, obj):
         return (obj and (self.self_obj is not None)
-                and (self.self_obj.id == obj.id))
+                and (self.self_obj.name == obj.name))
 
     def get_self(self):
         return self.self_obj

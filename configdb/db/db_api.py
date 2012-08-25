@@ -1,6 +1,7 @@
 import functools
 from configdb import exceptions
 from configdb.db import acl
+from configdb.db import query
 from configdb.db import schema
 from configdb.db import validation
 
@@ -13,6 +14,10 @@ def with_session(fn):
     return _with_session_wrapper
 
 
+def _field_validation(field, value):
+    return field.validate(value)
+
+
 class AdmDbApi(object):
     """High-level interface to the database."""
 
@@ -20,11 +25,11 @@ class AdmDbApi(object):
         self.db = db
         self.schema = schema
 
-    def _unpack(self, entity, data):
-        """ Unpacks input data. and performs a base sanity check """
+    def _unpack(self, entity, data, validation_fn=_field_validation):
+        """Unpack input data and perform a base sanity check."""
 
-        extra_fields = []
         # Complain about extra fields.
+        extra_fields = []
         for field in set(data.keys()):
             if field not in entity.fields:
                 extra_fields.append(field)
@@ -32,50 +37,25 @@ class AdmDbApi(object):
             raise exceptions.ValidationError(
                 'Unknown extra fields for "%s": %s' % (
                     entity.name, ', '.join(extra_fields)))
-        # deserialize the input data.
+
+        # Deserialize the input data.
         try:
             data = entity.from_net(data)
         except ValueError, e:
             raise exceptions.ValidationError(
                 'Validation error in deserialization: %s' % str(e))
-        return (entity,data)
 
-    
-    def _validate_find(self, entity, data):
-        """Perform validation for searching."""
+        # Perform validation on all fields.
         out = {}
         errors = []
-        (entity,data) = self._unpack(entity, data)
-        data_fields = set(data.keys())
-        #Now verify which kind of query must be performed, and unpack the input values
         for field in entity.fields.itervalues():
             try:
-                out[field.name] = validation.query_parse(field,data[field.name])
+                out[field.name] = validation_fn(field, data[field.name])
             except KeyError:
                 continue
             except validation.Invalid, e:
                 errors.append('%s: %s' % (field.name, e))
-        if errors:
-            raise exceptions.ValidationError(
-                'Validation error for "%s": %s' % (
-                    entity.name, ', '.join(errors)))
-        return out
 
-    
-    def _validate(self, entity, data):
-        """Perform validation on input data."""
-        out = {}
-        errors = []
-        (entity,data) = self._unpack(entity, data)
-
-        # Now perform validation on all fields.
-        for field in entity.fields.itervalues():
-            try:
-                out[field.name] = field.validate(data[field.name])
-            except KeyError:
-                continue
-            except validation.Invalid, e:
-                errors.append('%s: %s' % (field.name, e))
         # If there have been any errors, raise a ValidationError.
         if errors:
             raise exceptions.ValidationError(
@@ -133,7 +113,7 @@ class AdmDbApi(object):
         if not obj:
             raise exceptions.NotFound('%s/%s' % (entity_name, object_name))
 
-        data = self._validate(ent, data)
+        data = self._unpack(ent, data)
         diffs = self._diff_object(ent, obj, data)
         self.schema.acl_check_fields(
             ent, diffs.keys(), auth_context, 'w', obj)
@@ -169,7 +149,7 @@ class AdmDbApi(object):
 
         self.schema.acl_check_entity(ent, auth_context, 'w', None)
 
-        data = self._validate(ent, data)
+        data = self._unpack(ent, data)
         object_name = data.get('name')
         if not object_name:
             raise exceptions.ValidationError('No object name specified')
@@ -203,9 +183,13 @@ class AdmDbApi(object):
             raise exceptions.NotFound(entity_name)
 
         self.schema.acl_check_entity(ent, auth_context, 'r', None)
-        return self.db.find(entity_name,
-                            self._validate_find(ent, query),
-                            session).all() #MARK
+
+        def query_validation(field, value):
+            return self.db.parse_query_spec(value)
+        return self.db.find(
+            entity_name,
+            self._unpack(ent, query, validation_fn=query_validation),
+            session)
 
     @with_session
     def get_audit(self, session, query, auth_context):

@@ -25,11 +25,38 @@ def unshared_session_manager(sessionmaker):
         s.commit()
 
 
+class SqlAlchemyQueryCriteria(object):
+    pass
+
+
+class SqlAlchemyQueryEquals(SqlAlchemyQueryCriteria):
+
+    def __init__(self, spec):
+        self.target = spec['value']
+
+    def get_filter(self, classattr):
+        return classattr == self.target
+
+
+class SqlAlchemyQuerySubstringMatch(SqlAlchemyQueryCriteria):
+
+    def __init__(self, spec):
+        self.like_str = '%%%s%%' % spec['value']
+
+    def get_filter(self, classattr):
+        return classattr.like(self.like_str)
+
+
 class SqlAlchemyDbInterface(base.DbInterface):
     """Interface to an SQL database using SQLAlchemy."""
 
-    def __init__(self, uri, schema, schema_dir=None):
+    QUERY_TYPE_MAP = dict(base.DbInterface.QUERY_TYPE_MAP)
+    QUERY_TYPE_MAP.update({
+            'eq': SqlAlchemyQueryEquals,
+            'substring': SqlAlchemyQuerySubstringMatch,
+            })
 
+    def __init__(self, uri, schema, schema_dir=None):
         self.Session = scoped_session(
             sessionmaker(autocommit=False, autoflush=False))
         Base = declarative_base()
@@ -83,50 +110,31 @@ class SqlAlchemyDbInterface(base.DbInterface):
             session = self.Session
         return session.query(self._get_class(entity_name)).filter_by(
             name=object_name).first()
-
-    def get_approximate_by_name(self, entity_name, object_name, session=None):
-        if session is None:
-            session = self.Session
-        cls = self._get_class(entity_name)
-        return session.query(self._get_class(entity_name)).filter(cls.name.like( u"%%%s%%" % object_name)).first()
-
-    def _substring_match(self, data, query):
-        (field, classattr, session) = data
-        if field.is_relation():
-            return self.get_approximate_by_name(
-                            field.remote_name, query, session)
-        return classattr.like( u"%%%s%%" % query )
-
-    def _exact_match(self, data, query):
-        (field, classattr, session) = data
-        if field.is_relation():
-            return self.get_by_name(
-                            field.remote_name, query, session)
-        return classattr ==  query
-        
-        
     
-    def find(self, entity_name, attrs, session=None):
+    def find(self, entity_name, query, session=None):
         if session is None:
             session = self.Session
         classobj = self._get_class(entity_name)
         entity = self._schema.get_entity(entity_name)
-        query = session.query(classobj)
-        for qattr, qdata in attrs.iteritems():
-            classattr = getattr(classobj, qattr)
-            field = entity.fields[qattr]
-            if field.is_relation():                
-                # Make relational queries work by name. If the field
-                # is a relation, the value will be a list.
-                for qvalue in qdata:
-                    rel_obj = self._proxy_match((field, classattr, session), qvalue)
-                    if not rel_obj:
-                        raise exceptions.NotFound('%s=%s' % (qattr, qvalue['arg']))
-                    query = query.filter(classattr.contains(rel_obj))
-            else:
-                query = query.filter(self._proxy_match((field, classattr, session), qdata))
-        return query
+        sa_query = session.query(classobj)
 
+        # Assemble the SQL query.  The query is split between
+        # SQL-compatible criteria, and postprocessed criteria (which
+        # will be applied by the standard _run_query method).
+        pp_query = {}
+        for field_name, q in query.iteritems():
+            if not isinstance(q, SqlAlchemyQueryCriteria):
+                pp_query[field_name] = q
+            else:
+                field = entity.fields[field_name]
+                if field.is_relation():
+                    classattr = getattr(self._get_class(field.remote_name), 'name')
+                else:
+                    classattr = getattr(classobj, field_name)
+                sa_query = sa_query.filter(q.get_filter(classattr))
+
+        # Apply the post-process query to the SQL results.
+        return self._run_query(entity, pp_query, sa_query)
 
     def delete(self, entity_name, object_name, session):
         session.delete(self.get_by_name(entity_name, object_name, session))
@@ -146,5 +154,3 @@ class SqlAlchemyDbInterface(base.DbInterface):
                 setattr(obj, k, v)
         session.add(obj)
         return obj
-
-

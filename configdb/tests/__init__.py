@@ -91,4 +91,3 @@ class TestBase(unittest.TestCase):
     def get_schema(self):
         self._schema = schema.Schema(TEST_SCHEMA)
         return self._schema
-

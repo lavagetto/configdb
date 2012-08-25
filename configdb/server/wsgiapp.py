@@ -73,7 +73,7 @@ def json_response(fn):
 
 def _to_net(class_name, item):
     """An Entity.to_net() wrapper that works on items and lists."""
-    if isinstance(item, list):
+    if hasattr(item, 'next'):
         return [_to_net(class_name, x) for x in item]
     entity = g.api.schema.get_entity(class_name)
     return entity.to_net(item)

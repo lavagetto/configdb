@@ -1,11 +1,14 @@
 from configdb.db.interface import sa_interface
 from configdb.tests import *
-from configdb.tests.db_interface_test_base import DbInterfaceTestBase
+from configdb.tests.db_api_test_base import DbApiTestBase
 
 
-class TestSaInterface(DbInterfaceTestBase, TestBase):
+class DbApiSqlAlchemyTest(DbApiTestBase, TestBase):
+
+    def setUp(self):
+        TestBase.setUp(self)
+        DbApiTestBase.setUp(self)
 
     def init_db(self):
         dburi = 'sqlite:///:memory:'
         return sa_interface.SqlAlchemyDbInterface(dburi, self.get_schema())
-

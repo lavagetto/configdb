@@ -141,9 +141,10 @@ class WsgiTest(TestBase):
 
     def test_find(self):
         self._login()
+        query = {'name': {'type': 'eq', 'value': 'obz'},
+                 'roles': {'type': 'eq', 'value': 'role1'}}
         rv = self.app.post('/find/host',
-                           data=json.dumps({'name': 'obz',
-                                            'roles': 'role1'}),
+                           data=json.dumps(query),
                            content_type='application/json')
         self.assertEquals(200, rv.status_code)
         data = json.loads(rv.data)

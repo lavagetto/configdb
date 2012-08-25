@@ -29,3 +29,11 @@ class ValidationError(Error):
 
 class AuthError(Error):
     pass
+
+
+class QueryError(Error):
+    pass
+
+
+class IntegrityError(Error):
+    pass

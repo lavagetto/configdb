@@ -6,42 +6,7 @@ import cPickle as pickle
 from configdb import exceptions
 from configdb.db import schema
 from configdb.db.interface import base
-
-
-class LevelDbRelationProxy(object):
-    """Proxy for a database relation attribute.
-
-    Supports the list method append() and the 'in' operator, used both
-    with a LevelDbObject instance or a string.
-    """
-
-    def __init__(self, objs):
-        if objs is None:
-            objs = []
-        self._objs = set(x.name for x in objs)
-
-    def append(self, obj):
-        self._objs.add(obj.name)
-
-    def __contains__(self, obj):
-        if isinstance(obj, LevelDbObject):
-            obj = obj.name
-        return obj in self._objs
-
-
-class LevelDbObject(object):
-    """Lightweight database object instance."""
-
-    def __init__(self, entity, data):
-        self._entity = entity.name
-        for field in entity.fields.itervalues():
-            value = data.get(field.name)
-            if value is None and not field.attrs.get('nullable', True):
-                raise ValueError(
-                    'NULL value for non-nullable field "%s"' % field.name)
-            if field.is_relation():
-                value = LevelDbRelationProxy(value)
-            setattr(self, field.name, value)
+from configdb.db.interface import inmemory_interface
 
 
 class LevelDbSession(object):
@@ -53,7 +18,7 @@ class LevelDbSession(object):
         self._batch = leveldb.WriteBatch()
 
     def _key_for_obj(self, obj):
-        return self._db._key(obj._entity, obj.name)
+        return self._db._key(obj._entity_name, obj.name)
 
     def add(self, obj):
         self._batch.Put(self._key_for_obj(obj),
@@ -87,7 +52,7 @@ class LevelDbInterface(base.DbInterface):
     The interface is pretty simple at the moment, but it's a good
     example of how to implement a database backend for configdb.
 
-    We store lightweight LevelDbObject instances in the database,
+    We store lightweight InMemoryObject instances in the database,
     representing relations with sets of names.  Object serialization
     is done using the 'pickle' module.
     """
@@ -122,48 +87,23 @@ class LevelDbInterface(base.DbInterface):
         except KeyError:
             return None
 
-    def find(self, entity_name, attrs, session=None):
-        entity = self.schema.get_entity(entity_name)
-
-        def _match(x):
-            for key, query in attrs.iteritems():
-                xvalue = getattr(x, key, None)
-                if not isinstance(query, list):
-                    query = [query]
-                for q in query:
-                    if not self._proxy_match(xvalue, q):
-                        return False
-                return True
-
+    def _find_all(self, entity_name):
         cursor = self.db.RangeIter('%s:' % entity_name,
                                    '%s:\xff' % entity_name)
         for key, serialized_data in cursor:
-            data = self._deserialize(serialized_data)
-            if _match(data):
-                yield data
+            yield self._deserialize(serialized_data)
+
+    def find(self, entity_name, query, session=None):
+        entity = self.schema.get_entity(entity_name)
+        return self._run_query(entity, query,
+                               self._find_all(entity_name))
 
     def create(self, entity_name, attrs, session):
         entity = self.schema.get_entity(entity_name)
-        obj = LevelDbObject(entity, attrs)
+        obj = inmemory_interface.InMemoryObject(entity, attrs)
         session.add(obj)
         return obj
 
     def delete(self, entity_name, object_name, session):
         session.delete(self.get_by_name(entity_name, object_name, session))
-
-    def _exact_match(self, xvalue, value):
-        """
-        Exact matching comparison
-        """
-        if isinstance(xvalue, LevelDbRelationProxy):
-            return bool(xvalue._objs.intersection(set([value])))
-        else: 
-            return xvalue == value
-
-    def _substring_match(self, xvalue, value):
-        if isinstance(xvalue, LevelDbRelationProxy):
-            if [obj for obj in xvalue._objs if obj.find(value) >= 0]:
-                return True
-        else:
-            return (xvalue.find(value) >= 0)
 
