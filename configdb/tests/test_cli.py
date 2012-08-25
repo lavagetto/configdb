@@ -5,6 +5,7 @@ import shutil
 from configdb.db import schema
 from configdb.client import cli
 from configdb.client import connection
+from configdb.client import query
 from configdb.tests import *
 
 
@@ -84,7 +85,8 @@ class CliTest(mox.MoxTestBase):
 
     def test_find_object(self):
         self._connect()
-        self.conn.find('host', {'name': 'obz'}).AndReturn(['ok'])
+        self.conn.find('host', query.Query(name=query.Equals('obz'))
+                       ).AndReturn(['ok'])
         self.mox.ReplayAll()
 
         self.assertEquals(
@@ -92,11 +94,30 @@ class CliTest(mox.MoxTestBase):
 
     def test_find_object_by_relation(self):
         self._connect()
-        self.conn.find('host', {'roles': ['role1']}).AndReturn(['ok'])
+        self.conn.find('host', query.Query(roles=query.Equals('role1'))
+                       ).AndReturn(['ok'])
         self.mox.ReplayAll()
 
         self.assertEquals(
             0, cli.main(['host', 'find', '--roles=role1']))
+
+    def test_find_object_by_regexp(self):
+        self._connect()
+        self.conn.find('host', query.Query(name=query.RegexpMatch('^o'))
+                       ).AndReturn(['ok'])
+        self.mox.ReplayAll()
+
+        self.assertEquals(
+            0, cli.main(['host', 'find', '--name=~^o']))
+
+    def test_find_object_by_substring(self):
+        self._connect()
+        self.conn.find('host', query.Query(name=query.SubstringMatch('bz'))
+                       ).AndReturn(['ok'])
+        self.mox.ReplayAll()
+
+        self.assertEquals(
+            0, cli.main(['host', 'find', '--name=%bz']))
 
     def test_create_object(self):
         self._connect()

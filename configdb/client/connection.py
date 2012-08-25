@@ -9,6 +9,7 @@ import urllib
 import urllib2
 import StringIO
 from configdb import exceptions
+from configdb.client import query
 
 log = logging.getLogger(__name__)
 
@@ -135,9 +136,11 @@ class Connection(object):
     def delete(self, entity_name, object_name):
         return self._call(entity_name, 'delete', object_name)
 
-    def find(self, entity_name, query):
+    def find(self, entity_name, data):
+        if isinstance(data, query.Query):
+            data = data.to_net()
         return [self._from_net(entity_name, x)
-                for x in self._call(entity_name, 'find', data=query)]
+                for x in self._call(entity_name, 'find', data=data)]
 
     def get(self, entity_name, object_name):
         return self._from_net(

@@ -9,6 +9,7 @@ import sys
 from configdb import exceptions
 from configdb.db import schema
 from configdb.client import connection
+from configdb.client import query
 
 log = logging.getLogger(__name__)
 pl = inflect.engine()
@@ -161,9 +162,23 @@ class FindAction(Action):
     def __init__(self, entity, parser):
         self.add_standard_entity_fields(entity, parser)
 
+    def _get_query(self, entity, args):
+        qargs = {}
+        for field in entity.fields.itervalues():
+            value = getattr(args, field.name)
+            if value is None:
+                continue
+            if value.startswith('~'):
+                value = query.RegexpMatch(value[1:])
+            elif value.startswith('%'):
+                value = query.SubstringMatch(value[1:])
+            else:
+                value = query.Equals(value)
+            qargs[field.name] = value
+        return query.Query(**qargs)
+
     def run(self, conn, entity, args):
-        query = self.get_standard_entity_fields(entity, args)
-        objects = conn.find(entity.name, query)
+        objects = conn.find(entity.name, self._get_query(entity, args))
         pprint(objects)
 
 

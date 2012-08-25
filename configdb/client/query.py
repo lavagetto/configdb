@@ -39,3 +39,5 @@ class Query(object):
     def to_net(self):
         return dict((k, v.to_net()) for k, v in self.query.iteritems())
 
+    def __eq__(self, b):
+        return self.to_net() == b.to_net()
