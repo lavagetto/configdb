@@ -47,17 +47,3 @@ class ValidatorMixin(object):
             return self._validator.to_python(value)
         else:
             return value
-
-def query_parse(field,value):
-    if isinstance(value, list) and field.is_relation():
-        return [ query_parse(field,v)[0] for v in value ]
-    if value.startswith(u'~'):
-        r = {'type': 'substring', 'arg': value[1:]}
-    else:
-        v = field.validate(value)
-        if field.is_relation():
-            v = v[0]
-        r = {'type': 'eq', 'arg': v}
-    if field.is_relation():
-        return [r]
-    return r
