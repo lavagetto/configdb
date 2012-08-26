@@ -296,7 +296,8 @@ class DbApiTestBase(object):
                           'host', 'obz', auth_ctx)
 
     def test_self_acl(self):
-        testuser = self.db.get_by_name('user', 'testuser')
+        with self.db.session() as s:
+            testuser = self.db.get_by_name('user', 'testuser', s)
         auth_ctx = acl.AuthContext(testuser.name)
         auth_ctx.set_self(testuser)
 

@@ -92,15 +92,11 @@ class SqlAlchemyDbInterface(base.DbInterface):
         return session.execute(
             audit_table.select().where(sql_query).order_by('stamp desc'))
 
-    def get_by_name(self, entity_name, object_name, session=None):
-        if session is None:
-            session = self.Session()
+    def get_by_name(self, entity_name, object_name, session):
         return session.query(self._get_class(entity_name)).filter_by(
             name=object_name).first()
     
-    def find(self, entity_name, query, session=None):
-        if session is None:
-            session = self.Session()
+    def find(self, entity_name, query, session):
         classobj = self._get_class(entity_name)
         entity = self._schema.get_entity(entity_name)
         sa_query = session.query(classobj)

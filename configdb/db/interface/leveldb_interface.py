@@ -68,7 +68,7 @@ class LevelDbInterface(base.DbInterface):
     def get_audit(self, query, session):
         return []
 
-    def get_by_name(self, entity_name, object_name, session=None):
+    def get_by_name(self, entity_name, object_name, session):
         try:
             return self._deserialize(
                 self.db.Get(self._key(entity_name, object_name)))
@@ -81,7 +81,7 @@ class LevelDbInterface(base.DbInterface):
         for key, serialized_data in cursor:
             yield self._deserialize(serialized_data)
 
-    def find(self, entity_name, query, session=None):
+    def find(self, entity_name, query, session):
         entity = self.schema.get_entity(entity_name)
         return self._run_query(entity, query,
                                self._find_all(entity_name))

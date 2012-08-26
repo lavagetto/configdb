@@ -23,25 +23,28 @@ class DbInterfaceTestBase(object):
         db = self.load_db()
 
         # verify
-        b = db.get_by_name('host', 'obz')
-        self.assertEquals('obz', b.name)
-        self.assertEquals('1.2.3.4', b.ip)
-        self.assertEquals(None, b.ip6)
+        with db.session() as s:
+            b = db.get_by_name('host', 'obz', s)
+            self.assertEquals('obz', b.name)
+            self.assertEquals('1.2.3.4', b.ip)
+            self.assertEquals(None, b.ip6)
 
-        r = db.get_by_name('role', 'role1')
-        self.assertEquals('role1', r.name)
-        self.assertTrue(r in b.roles)
+            r = db.get_by_name('role', 'role1', s)
+            self.assertEquals('role1', r.name)
+            self.assertTrue(r in b.roles)
 
     def test_relation_semantics(self):
         db = self.load_db()
-        b = db.get_by_name('host', 'obz')
-        role_names = [x.name for x in b.roles]
-        self.assertEquals(['role1'], role_names)
+        with db.session() as s:
+            b = db.get_by_name('host', 'obz', s)
+            role_names = [x.name for x in b.roles]
+            self.assertEquals(['role1'], role_names)
 
     def _find(self, db, entity_name, raw_query):
         query = dict((k, db.parse_query_spec(v))
                      for k, v in raw_query.iteritems())
-        return list(db.find(entity_name, query))
+        with db.session() as s:
+            return list(db.find(entity_name, query, s))
 
     def test_find(self):
         db = self.load_db()

@@ -91,7 +91,7 @@ class InMemoryDbInterface(base.DbInterface):
     def get_audit(self, query, session):
         return self._audit
 
-    def get_by_name(self, entity_name, object_name, session=None):
+    def get_by_name(self, entity_name, object_name, session):
         return self._entities[entity_name].get(object_name, None)
 
     def create(self, entity_name, attrs, session):
@@ -103,7 +103,7 @@ class InMemoryDbInterface(base.DbInterface):
     def delete(self, entity_name, object_name, session):
         self._entities[entity_name].pop(object_name)
 
-    def find(self, entity_name, query, session=None):
+    def find(self, entity_name, query, session):
         entity = self.schema.get_entity(entity_name)
         return self._run_query(entity, query,
                                self._entities[entity_name].itervalues())
