@@ -1,4 +1,3 @@
-import contextlib
 import json
 import os
 import tempfile
@@ -11,18 +10,6 @@ from configdb import exceptions
 from configdb.db import schema
 from configdb.db.interface import base
 from configdb.db.interface import sa_generator
-
-
-@contextlib.contextmanager
-def unshared_session_manager(sessionmaker):
-    s = sessionmaker()
-    try:
-        yield s
-    except:
-        s.rollback()
-        raise
-    else:
-        s.commit()
 
 
 class SqlAlchemyQueryCriteria(object):
@@ -82,7 +69,7 @@ class SqlAlchemyDbInterface(base.DbInterface):
         return self._objs[entity_name.capitalize()]
 
     def session(self):
-        return unshared_session_manager(self.Session)
+        return base.session_context_manager(self.Session())
 
     def add_audit(self, entity_name, object_name, operation,
                   data, auth_ctx, session):
@@ -107,13 +94,13 @@ class SqlAlchemyDbInterface(base.DbInterface):
 
     def get_by_name(self, entity_name, object_name, session=None):
         if session is None:
-            session = self.Session
+            session = self.Session()
         return session.query(self._get_class(entity_name)).filter_by(
             name=object_name).first()
     
     def find(self, entity_name, query, session=None):
         if session is None:
-            session = self.Session
+            session = self.Session()
         classobj = self._get_class(entity_name)
         entity = self._schema.get_entity(entity_name)
         sa_query = session.query(classobj)

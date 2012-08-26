@@ -1,6 +1,21 @@
+import contextlib
 from configdb import exceptions
 from configdb.db import query
 
+
+@contextlib.contextmanager
+def session_context_manager(session):
+    try:
+        yield session
+    except:
+        session.rollback()
+        raise
+    else:
+        try:
+            session.commit()
+        except:
+            session.rollback()
+            raise
 
 
 class DbInterface(object):

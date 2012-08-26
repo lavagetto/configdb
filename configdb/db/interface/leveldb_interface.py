@@ -1,4 +1,3 @@
-import contextlib
 import json
 import leveldb
 import cPickle as pickle
@@ -31,19 +30,8 @@ class LevelDbSession(object):
         self._db.db.Write(self._batch, sync=True)
 
     def rollback(self):
-        del self._batch
-
-
-@contextlib.contextmanager
-def session_manager(db):
-    s = LevelDbSession(db)
-    try:
-        yield s
-    except:
-        s.rollback()
-        raise
-    else:
-        s.commit()
+        if hasattr(self, '_batch'):
+            del self._batch
 
 
 class LevelDbInterface(base.DbInterface):
@@ -71,7 +59,7 @@ class LevelDbInterface(base.DbInterface):
         return pickle.loads(data)
 
     def session(self):
-        return session_manager(self)
+        return base.session_context_manager(LevelDbSession(self))
 
     def add_audit(self, entity_name, object_name, operation,
                   data, auth_ctx, session):

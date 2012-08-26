@@ -1,4 +1,3 @@
-import contextlib
 from collections import defaultdict
 from configdb import exceptions
 from configdb.db import schema
@@ -64,10 +63,11 @@ class InMemorySession(object):
         # Does not handle renames.
         pass
 
+    def commit(self):
+        pass
 
-@contextlib.contextmanager
-def session_manager():
-    yield InMemorySession()
+    def rollback(self):
+        pass
 
 
 class InMemoryDbInterface(base.DbInterface):
@@ -82,7 +82,7 @@ class InMemoryDbInterface(base.DbInterface):
         self._audit = []
 
     def session(self):
-        return session_manager()
+        return base.session_context_manager(InMemorySession())
 
     def add_audit(self, entity_name, object_name, operation,
                   data, auth_ctx, session):

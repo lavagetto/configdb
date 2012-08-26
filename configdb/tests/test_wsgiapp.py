@@ -116,6 +116,31 @@ class WsgiTest(TestBase):
         data = json.loads(rv.data)
         self.assertEquals({'ok': True, 'result': True}, data)
 
+    def test_create_integrity_failure(self):
+        self._login()
+        rv = self.app.post('/create/user',
+                           data=json.dumps({'name': 'user1'}),
+                           content_type='application/json')
+        self.assertEquals(200, rv.status_code)
+        data = json.loads(rv.data)
+        self.assertFalse(data['ok'])
+
+    def test_session_is_reusable_after_integrity_failure(self):
+        # If a database call fails, the SQLAlchemy session needs
+        # to be cleared up. Ensure that this is the case.
+        self._login()
+        rv = self.app.post('/create/user',
+                           data=json.dumps({'name': 'user1'}),
+                           content_type='application/json')
+        self.assertEquals(200, rv.status_code)
+        data = json.loads(rv.data)
+        self.assertFalse(data['ok'])
+
+        rv = self.app.get('/get/user/user1')
+        self.assertEquals(200, rv.status_code)
+        data = json.loads(rv.data)
+        self.assertTrue(data['ok'])
+
     def test_require_json_content_type_on_post(self):
         self._login()
         rv = self.app.post('/create/user',
