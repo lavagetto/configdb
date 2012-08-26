@@ -15,6 +15,7 @@ log = logging.getLogger(__name__)
 
 
 class GzipProcessor(urllib2.BaseHandler):
+    """HTTP handler that supports the 'gzip' content encoding."""
 
     def http_request(self, req):
         req.add_header('Accept-Encoding', 'gzip')
@@ -48,6 +49,16 @@ class Connection(object):
 
     def __init__(self, url, schema, username=None, password=None,
                  auth_file=None):
+        """Initialize a new Connection object.
+
+        Args:
+          url: string, URL of the remote API endpoint
+          schema: configdb.db.schema.Schema, the db schema
+          username: string (optional), username for authentication
+          password: string (optional), password for authentication
+          auth_file: string (optional), file where we will store
+            permanent authentication credentials
+        """
         self._schema = schema
         self._url = url.rstrip('/')
         self._cj = cookielib.MozillaCookieJar()
@@ -131,24 +142,101 @@ class Connection(object):
             os.umask(old_umask)
 
     def create(self, entity_name, data):
+        """Create a new object.
+
+        Args:
+          entity_name: string, entity name
+          data: dict, attributes of the new object
+
+        Returns:
+          True on success.
+
+        Raises:
+          exceptions.NotFound if the entity does not exist
+          exceptions.ValidationError if the data does not pass
+          validation.
+        """
         return self._call(entity_name, 'create', data=data)
 
     def delete(self, entity_name, object_name):
+        """Delete an object.
+
+        Deleting an object that does not exist is not considered an
+        error.
+
+        Args:
+          entity_name: string, entity name
+          object_name: string, primary key (name) of the object
+        """
+      
         return self._call(entity_name, 'delete', object_name)
 
     def find(self, entity_name, data):
+        """Perform a query.
+
+        The 'query' argument should represent a valid query. It should
+        be a dictionary whose keys are entity attribute names, and
+        whose values are query criteria. A query criteria can be
+        expressed either in its raw dictionary form, or as a class in
+        the configdb.client.query module.
+
+        Args:
+          entity_name: string, entity name
+          data: query data
+
+        Returns:
+          A list of database objects.
+
+        Raises:
+          exceptions.NotFound if the entity does not exist
+        """
         if isinstance(data, query.Query):
             data = data.to_net()
         return [self._from_net(entity_name, x)
                 for x in self._call(entity_name, 'find', data=data)]
 
     def get(self, entity_name, object_name):
+        """Fetch a single object.
+
+        Args:
+          entity_name: string, entity name
+          object_name: string, primary key (name) of the object
+
+        Returns:
+          A database object.
+
+        Raises:
+          exceptions.NotFound if the object or entity do not exist.
+        """
         return self._from_net(
             entity_name,
             self._call(entity_name, 'get', object_name))
 
     def update(self, entity_name, object_name, data):
+        """Update the contents of an object.
+
+        Args:
+          entity_name: string, entity name
+          object_name: string, primary key (name) of the object
+          data: dict, attributes of the new object
+
+        Returns:
+          True on success.
+
+        Raises:
+          exceptions.NotFound if the object does not exist.
+          exceptions.ValidationError if the new data does not pass
+          validation.
+        """
         return self._call(entity_name, 'update', object_name, data)
 
     def get_audit(self, query):
+        """Query the audit log.
+
+        Args:
+          query: dict, query criteria
+
+        Returns:
+          A list of audit objects (dictionaries).
+        """
         return self._request(['audit'], query)

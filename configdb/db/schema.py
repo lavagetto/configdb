@@ -150,7 +150,7 @@ class Entity(acl.AclMixin):
 
 
 class Schema(object):
-    """A complete database schema.
+    """A database schema definition.
 
     A schema consists of multiple Entities, each having multiple
     Fields. The definition is loaded from JSON-encoded data.
