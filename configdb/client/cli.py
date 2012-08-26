@@ -168,7 +168,9 @@ class FindAction(Action):
             value = getattr(args, field.name)
             if value is None:
                 continue
-            if value.startswith('~'):
+            if value.startswith('\\~') or value.startswith('\\%'):
+                value = value[1:]
+            elif value.startswith('~'):
                 value = query.RegexpMatch(value[1:])
             elif value.startswith('%'):
                 value = query.SubstringMatch(value[1:])
