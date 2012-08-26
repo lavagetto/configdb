@@ -7,7 +7,6 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
 from configdb import exceptions
-from configdb.db import schema
 from configdb.db.interface import base
 from configdb.db.interface import sa_generator
 
