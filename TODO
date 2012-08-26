@@ -5,5 +5,9 @@
   leave the more complex diffs (data-preserving attribute renaming) to
   the user.
 
-* A Zookeeper backend would be nice.
-
+* Consider refactoring the DbApi / Session split, which does not make
+  much sense anymore now that there are many other backends beyond
+  SQLAlchemy. The original design of the Session API was meant to
+  allow using straightforward SQLAlchemy session objects, but we could
+  inject a wrapper there, gaining more simplicity for all the other
+  backends.
