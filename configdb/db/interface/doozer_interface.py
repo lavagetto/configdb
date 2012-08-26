@@ -55,9 +55,7 @@ class DoozerSession(object):
         try:
             rev = self.revisions.pop(path, 0)
             log.debug('delete %s, rev %s', path, rev)
-            item = self.db.conn.delete(
-                path,
-                rev)
+            self.db.conn.delete(path, rev)
         except RevMismatch:
             raise exceptions.IntegrityError('Bad revision')
         except BadPath:
