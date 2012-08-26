@@ -89,6 +89,7 @@ class ZookeeperInterface(base.DbInterface):
 
     def __init__(self, hosts, schema, root, timeout=30):
         self.conn = kazoo.client.KazooClient(hosts, timeout=timeout)
+        self.conn.start()
         self.schema = schema
         self.root = root
 
