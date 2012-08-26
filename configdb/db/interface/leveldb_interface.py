@@ -94,4 +94,3 @@ class LevelDbInterface(base.DbInterface):
 
     def delete(self, entity_name, object_name, session):
         session.delete(self.get_by_name(entity_name, object_name, session))
-

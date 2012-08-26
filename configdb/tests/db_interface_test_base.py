@@ -18,6 +18,7 @@ class DbInterfaceTestBase(object):
     def test_init_ok(self):
         db = self.init_db()
         self.assertTrue(db is not None)
+        db.close()
 
     def test_simple_insert(self):
         db = self.load_db()
@@ -33,12 +34,15 @@ class DbInterfaceTestBase(object):
             self.assertEquals('role1', r.name)
             self.assertTrue(r in b.roles)
 
+        db.close()
+
     def test_relation_semantics(self):
         db = self.load_db()
         with db.session() as s:
             b = db.get_by_name('host', 'obz', s)
             role_names = [x.name for x in b.roles]
             self.assertEquals(['role1'], role_names)
+        db.close()
 
     def _find(self, db, entity_name, raw_query):
         query = dict((k, db.parse_query_spec(v))
@@ -51,17 +55,20 @@ class DbInterfaceTestBase(object):
         r = self._find(db, 'host', {'name': {'type': 'eq', 'value': 'obz'}})
         self.assertEquals(1, len(r))
         self.assertEquals('obz', r[0].name)
+        db.close()
 
     def test_find_relation(self):
         db = self.load_db()
         r = self._find(db, 'host', {'roles': {'type': 'eq', 'value': 'role1'}})
         self.assertEquals(1, len(r))
         self.assertEquals('obz', r[0].name)
+        db.close()
 
     def test_find_nonexisting(self):
         db = self.load_db()
         r = self._find(db, 'host', {'name': {'type': 'eq', 'value': 'nonexisting'}})
         self.assertEquals(0, len(r))
+        db.close()
 
     def test_find_multiple_criteria(self):
         db = self.load_db()
@@ -69,15 +76,18 @@ class DbInterfaceTestBase(object):
                                     'name': {'type': 'eq', 'value': 'obz'}})
         self.assertEquals(1, len(r))
         self.assertEquals('obz', r[0].name)
+        db.close()
 
     def test_find_nonmatching_multiple_criteria(self):
         db = self.load_db()
         r = self._find(db, 'host', {'roles': {'type': 'eq', 'value': 'role1'},
                                     'name': {'type': 'eq', 'value': 'ooops'}})
         self.assertEquals(0, len(r))
+        db.close()
 
     def test_find_nonexisting_relation(self):
         db = self.load_db()
         r = self._find(db, 'host', {'roles': {'type': 'eq', 'value':'zzzz'}})
         self.assertEquals(0, len(r))
+        db.close()
                 

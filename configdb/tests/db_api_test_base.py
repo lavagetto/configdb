@@ -23,6 +23,9 @@ class DbApiTestBase(object):
         self.api = db_api.AdmDbApi(self.get_schema(), self.db)
         self.ctx = acl.AuthContext('admin', ['admins'])
 
+    def tearDown(self):
+        self.db.close()
+
     def init_db(self):
         raise NotImplementedError()
 

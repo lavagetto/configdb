@@ -146,3 +146,6 @@ class DoozerInterface(base.DbInterface):
 
     def delete(self, entity_name, object_name, session):
         session._delete_by_name(entity_name, object_name)
+
+    def close(self):
+        self.conn.disconnect()

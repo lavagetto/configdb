@@ -29,10 +29,13 @@ class DbApiDoozerTest(DbApiTestBase, TestBase):
             None, self.get_schema(), self.TESTROOT)
 
     def tearDown(self):
+        client = doozer.connect()
         try:
-            delete_all(doozer.connect(), self.TESTROOT)
+            delete_all(client, self.TESTROOT)
         except NoEntity:
             pass
+        client.disconnect()
+        DbApiTestBase.tearDown(self)
         TestBase.tearDown(self)
 
 

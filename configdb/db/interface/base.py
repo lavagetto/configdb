@@ -72,3 +72,6 @@ class DbInterface(object):
                     break
             if ok:
                 yield item
+
+    def close(self):
+        """Release resources associated with the db."""
