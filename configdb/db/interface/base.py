@@ -55,6 +55,8 @@ class DbInterface(object):
             return self.QUERY_TYPE_MAP[query_spec['type']](query_spec)
         except KeyError:
             raise exceptions.QueryError('invalid query spec')
+        except TypeError:
+            raise exceptions.QueryError('Query must be a dictionary specifyng type and value of the query')
 
     def _run_query(self, entity, query, items):
         """Apply a query filter to a list of items."""
