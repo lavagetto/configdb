@@ -3,6 +3,7 @@ import urllib
 import cPickle as pickle
 
 import kazoo.client
+import kazoo.exceptions
 
 from configdb import exceptions
 from configdb.db.interface import base
@@ -39,7 +40,7 @@ class ZookeeperSession(object):
                 self.db._serialize(obj),
                 rev)
             self.revisions[path] = stat.version
-        except BadVersionException:
+        except kazoo.exceptions.BadVersionException:
             raise exceptions.IntegrityError('Bad revision')
 
     def delete(self, obj):
@@ -51,7 +52,7 @@ class ZookeeperSession(object):
             try:
                 rev = self.revisions.pop(path)
                 self.db.conn.delete(path, rev)
-            except BadVersionException:
+            except kazoo.exceptions.BadVersionException:
                 raise exceptions.IntegrityError('Bad revision')
 
     def _deserialize_if_not_none(self, data):
@@ -67,15 +68,23 @@ class ZookeeperSession(object):
             data, stat = self.db.conn.get(path, rev)
             if rev < 0:
                 self.revisions[path] = stat.version
-        except BadVersionException:
+        except kazoo.exceptions.BadVersionException:
             data, stat = self.db.conn.get(path)
             self.revisions[path] = stat.version
+        except kazoo.exceptions.NoNodeException:
+            return None
         return self._deserialize_if_not_none(data)
 
     def _find(self, entity_name):
         path = self._mkpath(entity_name)
         for name in self.db.conn.get_children(path):
             yield self._get(entity_name, self._unescape(name))
+
+    def commit(self):
+        pass
+
+    def rollback(self):
+        pass
 
 
 class ZookeeperInterface(base.DbInterface):
@@ -100,7 +109,7 @@ class ZookeeperInterface(base.DbInterface):
         return pickle.loads(data)
 
     def session(self):
-        return base.session_context_manager(DoozerSession(self))
+        return base.session_context_manager(ZookeeperSession(self))
 
     def add_audit(self, entity_name, object_name, operation,
                   data, auth_ctx, session):
