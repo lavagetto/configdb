@@ -42,7 +42,9 @@ Plenty, of course:
 
 * The performance characteristics are sub-optimal: serialization and
   validation have their cost. Furthermore, the network transport is
-  HTTP, which adds overhead, etc.
+  HTTP, which adds overhead, etc. Queries, for some backends, can be
+  particularly expensive since we might have to do filtering on the
+  client side (in the configdb server).
 
 * Transaction support is currently limited to what is provided by the
   underlying SQL storage backend (so, possibly, none).
