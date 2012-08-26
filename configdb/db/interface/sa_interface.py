@@ -3,7 +3,7 @@ import os
 import tempfile
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
 from configdb import exceptions
@@ -44,10 +44,8 @@ class SqlAlchemyDbInterface(base.DbInterface):
             })
 
     def __init__(self, uri, schema, schema_dir=None):
-        self.Session = scoped_session(
-            sessionmaker(autocommit=False, autoflush=False))
+        self.Session = sessionmaker(autocommit=False, autoflush=False)
         Base = declarative_base()
-        Base.query = self.Session.query_property()
 
         self._objs = {'Base': Base}
         self._schema = schema
