@@ -94,3 +94,25 @@ as::
 
 
 
+When searching your database with the `find` verb, you have options to
+search for approximate matches within your query string. So, you can
+perform a substring match (similar to what you achieve with the LIKE
+sql operand) you may simply prepend your search term with a '%',
+thus::
+
+    $ client host find --role=%web
+
+will search for all hosts that have a role containing the "web"
+substring. Also, you can search with regexp matching, which is
+achieved prepending your query string with '~', so that::
+
+    $ client host find --name="~www\d+"
+
+will search for hosts that have names matching the regexp "www\d+".
+
+If your search term begins with one of the two special characters, you
+may just escape them with a backslash::
+
+    $ client host find --serial="\~EXAMPLE"
+
+
