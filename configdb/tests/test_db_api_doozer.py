@@ -38,8 +38,3 @@ class DbApiDoozerTest(DbApiTestBase, TestBase):
         DbApiTestBase.tearDown(self)
         TestBase.tearDown(self)
 
-
-if __name__ == '__main__':
-    import logging
-    logging.basicConfig(level=logging.DEBUG)
-    unittest.main()
