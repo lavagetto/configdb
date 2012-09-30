@@ -216,6 +216,11 @@ def make_app(config={}):
         db = leveldb_interface.LevelDbInterface(
             app.config['DB_URI'],
             schema_obj)
+    elif db_driver == 'zookeeper':
+        from configdb.db.interface import zookeeper_interface
+        if not 'ZK_HOSTS' in app.config:
+            raise Exception('you need to define ZK_HOSTS list to use zookeeper as db backend')
+        db = zookeeper_interface.ZookeeperInterface(app.config['ZK_HOSTS'], schema_obj, app.config['DB_URI'])
     else:
         raise Exception('DB_DRIVER not one of "sqlalchemy" or "leveldb"')
 
