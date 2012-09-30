@@ -42,6 +42,8 @@ class SqlAlchemyDbInterface(base.DbInterface):
             'substring': SqlAlchemyQuerySubstringMatch,
             })
 
+    AUDIT_SUPPORT = True
+
     def __init__(self, uri, schema, schema_dir=None):
         self.Session = sessionmaker(autocommit=False, autoflush=False)
         Base = declarative_base()
