@@ -136,6 +136,8 @@ class DbApiTestBase(object):
         self.assertTrue(self.api.create('host', host_data, self.ctx))
 
     def test_create_adds_audit_log(self):
+        if not self.api.db.AUDIT_SUPPORT:
+            return
         host_data = {'name': 'utz', 'ip': '2.3.4.5'}
         self.assertTrue(self.api.create('host', host_data, self.ctx))
 
@@ -180,6 +182,8 @@ class DbApiTestBase(object):
                           self.api.get('host', 'obz', self.ctx).ip)
 
     def test_update_adds_audit_log(self):
+        if not self.api.db.AUDIT_SUPPORT:
+            return
         result = self.api.update('host', 'obz', {'ip': '2.3.4.5'}, self.ctx)
         self.assertTrue(result)
 
@@ -269,6 +273,8 @@ class DbApiTestBase(object):
                           'host', 'obz',  self.ctx)
 
     def test_delete_adds_audit_log(self):
+        if not self.api.db.AUDIT_SUPPORT:
+            return
         self.assertTrue(
             self.api.delete('host', 'obz', self.ctx))
 
@@ -310,6 +316,12 @@ class DbApiTestBase(object):
         user_data = {'ssh_keys': ['testuser@host2']}
         r = self.api.update('user', 'testuser', user_data, auth_ctx)
         self.assertTrue(r)
+
+    def test_get_audit_fails_if_not_supported(self):
+        self.assertRaises(exceptions.NotImplementedError,
+                          self.api.get_audit,
+                          {'entity': 'user'},
+                          self.ctx)
 
     def test_get_audit_requires_entity_spec(self):
         self.assertRaises(exceptions.NotFound,

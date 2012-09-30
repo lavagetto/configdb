@@ -16,6 +16,7 @@ def delete_all(client, path):
             delete_all(client, fullp)
 
 
+@attr('doozer')
 class TestDoozerInterface(DbInterfaceTestBase, TestBase):
 
     TESTROOT = '/configdb-test-%d' % os.getpid()
