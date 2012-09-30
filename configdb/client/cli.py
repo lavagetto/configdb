@@ -169,7 +169,7 @@ class FindAction(Action):
             if value is None:
                 continue
             if value.startswith('\\~') or value.startswith('\\%'):
-                value = value[1:]
+                value = query.Equals(value[1:])
             elif value.startswith('~'):
                 value = query.RegexpMatch(value[1:])
             elif value.startswith('%'):
