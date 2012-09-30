@@ -2,6 +2,7 @@ import unittest
 import shutil
 import tempfile
 from configdb.db import schema
+from nose.plugins.attrib import attr
 
 
 TEST_SCHEMA = '''

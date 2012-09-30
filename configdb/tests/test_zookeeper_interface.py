@@ -9,6 +9,7 @@ from configdb.tests import *
 from configdb.tests.db_interface_test_base import DbInterfaceTestBase
 
 
+@attr('zookeeper')
 class ZookeeperInterfaceTest(DbInterfaceTestBase, TestBase):
 
     TESTROOT = '/configdb-test-%d' % os.getpid()
