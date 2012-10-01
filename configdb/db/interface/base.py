@@ -27,6 +27,8 @@ class DbInterface(object):
         'regexp': query.RegexpMatch,
         }
 
+    AUDIT_SUPPORT = False
+
     def session(self):
         """Return a session object.
 
@@ -77,3 +79,11 @@ class DbInterface(object):
 
     def close(self):
         """Release resources associated with the db."""
+
+    def add_audit(self, entity_name, object_name, operation,
+                  data, auth_ctx, session):
+        """Add an entry in the audit log."""
+
+    def get_audit(self, query, session):
+        """Query the audit log."""
+        raise NotImplementedError()

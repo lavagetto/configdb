@@ -121,13 +121,6 @@ class DoozerInterface(base.DbInterface):
     def session(self):
         return base.session_context_manager(DoozerSession(self))
 
-    def add_audit(self, entity_name, object_name, operation,
-                  data, auth_ctx, session):
-        pass
-
-    def get_audit(self, query, session):
-        return []
-
     def get_by_name(self, entity_name, object_name, session):
         return session._get(entity_name, object_name)
 

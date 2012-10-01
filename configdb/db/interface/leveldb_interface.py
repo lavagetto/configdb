@@ -61,13 +61,6 @@ class LevelDbInterface(base.DbInterface):
     def session(self):
         return base.session_context_manager(LevelDbSession(self))
 
-    def add_audit(self, entity_name, object_name, operation,
-                  data, auth_ctx, session):
-        pass
-
-    def get_audit(self, query, session):
-        return []
-
     def get_by_name(self, entity_name, object_name, session):
         try:
             return self._deserialize(

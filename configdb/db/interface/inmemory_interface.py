@@ -76,6 +76,8 @@ class InMemoryDbInterface(base.DbInterface):
     Only useful for testing purposes.
     """
 
+    AUDIT_SUPPORT = True
+
     def __init__(self, schema):
         self.schema = schema
         self._entities = defaultdict(dict)
@@ -89,6 +91,7 @@ class InMemoryDbInterface(base.DbInterface):
         self._audit.append((entity_name, object_name, operation, data))
 
     def get_audit(self, query, session):
+        # FIXME: apply the query.
         return self._audit
 
     def get_by_name(self, entity_name, object_name, session):
