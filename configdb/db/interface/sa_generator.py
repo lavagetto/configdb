@@ -94,7 +94,8 @@ class %(class_name)s(Base):
 
     def _sa_assoc_table_name(self, field):
         tbls = sorted([field.local_name, field.remote_name])
-        return '%s_%s_assoc' % tuple(tbls)
+        tbls.append(field.relation_id)
+        return '%s_%s_assoc_%s' % tuple(tbls)
         
     def generate(self):
         out = ['from sqlalchemy import *',

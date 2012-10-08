@@ -68,6 +68,10 @@ class Relation(Field):
         self.local_name = entity.name
         self.remote_name = attrs.pop('rel')
         attrs['validator'] = 'relation'
+        if 'identifier' in attrs:
+            self.relation_id = attrs['identifier']
+        else:
+            self.relation_id = '1'
         Field.__init__(self, entity, name, attrs)
 
     def is_relation(self):
