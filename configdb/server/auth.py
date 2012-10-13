@@ -2,7 +2,6 @@ import crypt
 from flask import request
 from configdb.db import acl
 
-
 def user_auth_fn(user_entity_name='user'):
     """Auth function generator for user-based schemas.
 
@@ -14,7 +13,8 @@ def user_auth_fn(user_entity_name='user'):
         username = data.get('username')
         password = data.get('password')
         if username and password:
-            user_obj = api.db.get_by_name(user_entity_name, username)
+            user_obj = api.db.get_by_name(user_entity_name, username, api.db.Session())
+            print user_obj.password
             if user_obj:
                 enc_password = crypt.crypt(password, user_obj.password)
                 if enc_password == user_obj.password:
@@ -30,7 +30,7 @@ def user_auth_context_fn(user_entity_name='user'):
     """
     def _user_auth_context_fn(api, username):
         ctx = acl.AuthContext(username)
-        user_obj = api.db.get_by_name(user_entity_name, username)
+        user_obj = api.db.get_by_name(user_entity_name, username, api.db.Session())
         if user_obj:
             ctx.set_self(user_obj)
         return ctx

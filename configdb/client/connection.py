@@ -123,7 +123,7 @@ class Connection(object):
     def _login(self):
         # Ask for password if possible.
         if self._password is None:
-            if os.isatty(sys.stdin):
+            if sys.stdin.isatty():
                 self._password = getpass.getpass()
             else:
                 raise exceptions.AuthError('No password provided')
