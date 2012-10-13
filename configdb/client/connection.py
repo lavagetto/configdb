@@ -64,11 +64,15 @@ class Connection(object):
         self._cj = cookielib.MozillaCookieJar()
         self._auth_file = auth_file
         if auth_file and os.path.exists(auth_file):
-            self._cj.load(self._auth_file)
+            try:
+                self._cj.load(self._auth_file,  ignore_discard=True)
+            except cookielib.LoadError, e:
+                log.warn('Could not save session state to %s: %s',
+                         self._auth_file, e)
         self._username = username or getpass.getuser()
         self._password = password
         self._opener = urllib2.build_opener(
-            urllib2.HTTPCookieProcessor(self._cj),
+            urllib2.HTTPCookieProcessor(self._cj) ,
             GzipProcessor())
 
     def _request(self, path, data=None, logged_in=False):
@@ -135,7 +139,7 @@ class Connection(object):
         if self._auth_file:
             old_umask = os.umask(077)
             try:
-                self._cj.save(self._auth_file)
+                self._cj.save(self._auth_file, ignore_discard=True)
             except Exception, e:
                 log.warn('Could not save session state to %s: %s',
                          self._auth_file, e)
@@ -240,3 +244,4 @@ class Connection(object):
           A list of audit objects (dictionaries).
         """
         return self._request(['audit'], query)
+
