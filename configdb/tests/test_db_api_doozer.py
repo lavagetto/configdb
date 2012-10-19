@@ -1,6 +1,11 @@
 import os
-import doozer
-from doozer.client import IsDirectory, NoEntity
+try:
+    import doozer
+    from doozer.client import IsDirectory, NoEntity
+except ImportError:
+    from nose.exc import SkipTest
+    raise SkipTest('doozer not found')
+
 from configdb.db.interface import doozer_interface
 from configdb.tests import *
 from configdb.tests.db_api_test_base import DbApiTestBase
