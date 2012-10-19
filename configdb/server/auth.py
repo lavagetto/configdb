@@ -14,7 +14,6 @@ def user_auth_fn(user_entity_name='user'):
         password = data.get('password')
         if username and password:
             user_obj = api.db.get_by_name(user_entity_name, username, api.db.Session())
-            print user_obj.password
             if user_obj:
                 enc_password = crypt.crypt(password, user_obj.password)
                 if enc_password == user_obj.password:
