@@ -94,7 +94,7 @@ class ConnectionTest(TestBase):
         self.mox.StubOutWithMock(cookielib, 'MozillaCookieJar',
                                  use_mock_anything=True)
         cookielib.MozillaCookieJar().AndReturn(jar)
-        jar.load(auth_file)
+        jar.load(auth_file, ignore_discard=True)
 
         self.mox.ReplayAll()
 
@@ -130,7 +130,7 @@ class ConnectionTest(TestBase):
         self.mox.StubOutWithMock(getpass, 'getuser')
         getpass.getuser().InAnyOrder('login').AndReturn('admin')
         self.mox.StubOutWithMock(os, 'isatty')
-        os.isatty(sys.stdin).InAnyOrder('login').AndReturn(True)
+        os.isatty(mox.IsA(int)).InAnyOrder('login').AndReturn(True)
         self.mox.StubOutWithMock(getpass, 'getpass')
         getpass.getpass().InAnyOrder('login').AndReturn('pass')
         self._mock_login()
@@ -140,14 +140,15 @@ class ConnectionTest(TestBase):
         self.assertEquals({'name': 'obz'}, conn.get('host', 'obz'))
 
     def test_login_fails_if_cant_ask_password(self):
+        self.mox.StubOutWithMock(getpass, 'getuser')
+        getpass.getuser().InAnyOrder('login').AndReturn('admin')
+        self.mox.StubOutWithMock(os, 'isatty')
+        os.isatty(mox.IsA(int)).InAnyOrder('login').AndReturn(False)
+        #self._mock_login()
         self.opener.open(
             RequestComparator(TEST_URL + '/get/host/obz', None)
             ).AndRaise(urllib2.HTTPError('/get/host/obz', 403,
                                          'Forbidden', {}, None))
-        self.mox.StubOutWithMock(getpass, 'getuser')
-        getpass.getuser().InAnyOrder('login').AndReturn('admin')
-        self.mox.StubOutWithMock(os, 'isatty')
-        os.isatty(sys.stdin).InAnyOrder('login').AndReturn(False)
         self.mox.ReplayAll()
 
         conn = self._connect()

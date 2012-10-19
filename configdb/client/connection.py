@@ -127,7 +127,9 @@ class Connection(object):
     def _login(self):
         # Ask for password if possible.
         if self._password is None:
-            if sys.stdin.isatty():
+            # Yes this is equivalent to sys.stdin.isatty(), but easier
+            # to test with Mox apparently...
+            if os.isatty(sys.stdin.fileno()):
                 self._password = getpass.getpass()
             else:
                 raise exceptions.AuthError('No password provided')
