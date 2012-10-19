@@ -27,6 +27,8 @@ class UserAuthTest(TestBase):
     def setUp(self):
         TestBase.setUp(self)
         self.mox = mox.Mox()
+        self.db = self.mox.CreateMockAnything()
+        self.session = 'Session' # an opaque object will do
 
     def tearDown(self):
         self.mox.VerifyAll()
@@ -34,56 +36,57 @@ class UserAuthTest(TestBase):
         TestBase.tearDown(self)
 
     def test_auth_user_fn_ok(self):
-        db = self.mox.CreateMockAnything()
-        db.get_by_name('user', 'admin').AndReturn(UserObj('admin', 'pw'))
+        self.db.Session().AndReturn(self.session)
+        self.db.get_by_name('user', 'admin', self.session).AndReturn(
+            UserObj('admin', 'pw'))
         self.mox.ReplayAll()
 
         fn = auth.user_auth_fn()
         self.assertEquals(
             'admin',
-            fn(ApiObj(db), {'username': 'admin',
-                            'password': 'pw'}))
+            fn(ApiObj(self.db), {'username': 'admin',
+                                 'password': 'pw'}))
 
     def test_auth_user_fn_wrong_password(self):
-        db = self.mox.CreateMockAnything()
-        db.get_by_name('user', 'admin').AndReturn(UserObj('admin', 'pw'))
+        self.db.Session().AndReturn(self.session)
+        self.db.get_by_name('user', 'admin', self.session).AndReturn(
+            UserObj('admin', 'pw'))
         self.mox.ReplayAll()
 
         fn = auth.user_auth_fn()
         self.assertEquals(
             None,
-            fn(ApiObj(db), {'username': 'admin',
-                            'password': 'badpass'}))
+            fn(ApiObj(self.db), {'username': 'admin',
+                                 'password': 'badpass'}))
 
     def test_auth_user_fn_missing_data(self):
-        db = self.mox.CreateMockAnything()
         self.mox.ReplayAll()
 
         fn = auth.user_auth_fn()
         self.assertEquals(
             None,
-            fn(ApiObj(db), {'username': 'admin'}))
+            fn(ApiObj(self.db), {'username': 'admin'}))
 
     def test_auth_user_fn_nonexisting_user(self):
-        db = self.mox.CreateMockAnything()
-        db.get_by_name('user', 'admin').AndReturn(None)
+        self.db.Session().AndReturn(self.session)
+        self.db.get_by_name('user', 'admin', self.session).AndReturn(None)
         self.mox.ReplayAll()
 
         fn = auth.user_auth_fn()
         self.assertEquals(
             None,
-            fn(ApiObj(db), {'username': 'admin',
-                            'password': 'pw'}))
+            fn(ApiObj(self.db), {'username': 'admin',
+                                 'password': 'pw'}))
 
 
     def test_auth_user_context_ok(self):
-        db = self.mox.CreateMockAnything()
+        self.db.Session().AndReturn(self.session)
         user_obj = UserObj('admin', 'pw')
-        db.get_by_name('user', 'admin').AndReturn(user_obj)
+        self.db.get_by_name('user', 'admin', self.session).AndReturn(user_obj)
         self.mox.ReplayAll()
 
         fn = auth.user_auth_context_fn()
-        ctx = fn(ApiObj(db), 'admin')
+        ctx = fn(ApiObj(self.db), 'admin')
         self.assertTrue(isinstance(ctx, acl.AuthContext))
         self.assertEquals(user_obj, ctx.get_self())
 
