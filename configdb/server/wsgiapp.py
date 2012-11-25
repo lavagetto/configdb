@@ -20,6 +20,7 @@ from configdb.db import db_api
 from configdb.db import schema
 from configdb.server import auth
 from datetime import timedelta
+
 log = logging.getLogger(__name__)
 api_app = Blueprint('configdb', __name__)
 
