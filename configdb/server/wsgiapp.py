@@ -19,7 +19,7 @@ from configdb.db import acl
 from configdb.db import db_api
 from configdb.db import schema
 from configdb.server import auth
-
+from datetime import timedelta
 log = logging.getLogger(__name__)
 api_app = Blueprint('configdb', __name__)
 
@@ -82,6 +82,8 @@ def _to_net(class_name, item):
 @api_app.before_request
 def set_api():
     g.api = current_app.api
+    session.permanent = True
+    current_app.permanent_session_lifetime = timedelta(minutes=120)
 
 
 def authenticate(fn):
@@ -190,7 +192,6 @@ def make_app(config={}):
     app.config.from_envvar('APP_CONFIG', silent=True)
     app.config.update(config)
     app.register_blueprint(api_app)
-
     # Initialize configdb configuration.
     if 'AUTH_FN' not in app.config:
         app.config['AUTH_FN'] = auth.user_auth_fn()

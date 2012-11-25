@@ -63,6 +63,10 @@ class Connection(object):
         self._url = url.rstrip('/')
         self._cj = cookielib.MozillaCookieJar()
         self._auth_file = auth_file
+        # Handy when you're running a client within an app that runs
+        # in a terminal but should not prompt the user, say a devel
+        # webapp.
+        self.batch = None
         if auth_file and os.path.exists(auth_file):
             try:
                 self._cj.load(self._auth_file,  ignore_discard=True)
@@ -129,7 +133,7 @@ class Connection(object):
         if self._password is None:
             # Yes this is equivalent to sys.stdin.isatty(), but easier
             # to test with Mox apparently...
-            if os.isatty(sys.stdin.fileno()):
+            if os.isatty(sys.stdin.fileno()) and not self.batch:
                 self._password = getpass.getpass()
             else:
                 raise exceptions.AuthError('No password provided')
