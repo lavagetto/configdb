@@ -94,6 +94,7 @@ TYPE_MAP = {
     'text': Field,
     'binary': Field,
     'int': Field,
+    'number': Field,
     'bool': BoolField,
     'datetime': DateTimeField,
     'relation': Relation,

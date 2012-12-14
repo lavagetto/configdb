@@ -39,6 +39,7 @@ class Action(object):
         type_map = {
             'string': str,
             'int': int,
+	    'number': float,
             'password': read_password,
             'text': read_from_file,
             'binary': read_from_file,
