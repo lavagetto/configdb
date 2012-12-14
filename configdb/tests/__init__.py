@@ -21,6 +21,9 @@ TEST_SCHEMA = '''
     "type": "relation",
     "rel": "role"
   },
+  "ghz": {
+    "type": "number"
+  },
   "_acl": {
     "r": "*", "w": "user/admin"
   }

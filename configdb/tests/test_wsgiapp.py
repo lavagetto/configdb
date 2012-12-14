@@ -43,7 +43,7 @@ class WsgiTest(TestBase):
 
         db = app.api.db
         with db.session() as s:
-            a = db.create('host', {'ip': '1.2.3.4', 'name': 'obz'}, s)
+            a = db.create('host', {'ip': '1.2.3.4', 'name': 'obz', 'ghz': 4.5}, s)
             r = db.create('role', {'name': 'role1'}, s)
             u = db.create('user', {'name': 'user1',
                                    'last_login': datetime(2006, 1, 1)}, s)
@@ -93,6 +93,7 @@ class WsgiTest(TestBase):
         self.assertEquals({'name': 'obz',
                            'ip': '1.2.3.4',
                            'ip6': None,
+                           'ghz': 4.5,
                            'roles': ['role1']},
                           result)
 

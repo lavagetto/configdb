@@ -121,12 +121,12 @@ class CliTest(mox.MoxTestBase):
 
     def test_create_object(self):
         self._connect()
-        self.conn.create('host', {'name': 'utz', 'ip': '2.3.4.5'})
+        self.conn.create('host', {'name': 'utz', 'ip': '2.3.4.5', "ghz": 4.5 })
         self.mox.ReplayAll()
 
         self.assertEquals(
             0, cli.main(
-                ['host', 'create', '--name=utz', '--ip=2.3.4.5']))
+                ['host', 'create', '--name=utz', '--ip=2.3.4.5', '--ghz=4.5']))
 
     def test_create_object_with_relation(self):
         self._connect()
