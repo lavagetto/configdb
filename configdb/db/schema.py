@@ -219,3 +219,26 @@ class Schema(object):
             raise exceptions.AclError(
                 'unauthorized change to %s' % (
                     entity.name,))
+
+
+    def get_dependency_sequence(self):
+        sequence = []
+        #create a copy of the entities dict.
+        entities = self.entities.copy()
+        while entities:
+            additions = []
+            for entity in entities.itervalues():
+                valid = True
+                for (name, field) in entity.fields.iteritems():
+                    if field.is_relation() and field.remote_name not in sequence:
+                        # We have a relation which is still not rolled out.
+                        valid = False
+                        break
+                if valid:
+                    sequence.append(entity.name)
+                    additions.append(entity.name)
+            for name in additions:
+                del entities[name]
+        return sequence
+                    
+    

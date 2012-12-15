@@ -4,7 +4,6 @@ from configdb.db import schema
 from configdb.tests import *
 from datetime import datetime
 
-
 class SchemaTest(TestBase):
 
     def test_empty_schema_ok(self):
@@ -108,7 +107,12 @@ class SchemaTest(TestBase):
         self.assertTrue('address' in ent.fields)
         self.assertEquals('an entity', ent.description)
 
-
+    def test_sequence(self):
+        s = schema.Schema(TEST_SCHEMA)
+        seq = s.get_dependency_sequence()
+        self.assertTrue(seq.index("role") < seq.index("host"))
+        self.assertTrue(seq.index("ssh_key") < seq.index("user"))
+        
 class FakeRole(object):
 
     def __init__(self, name):
