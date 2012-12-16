@@ -17,15 +17,14 @@ class BackupTest(mox.MoxTestBase):
     def setUp(self):
         mox.MoxTestBase.setUp(self)
         self.conn = self.mox.CreateMock(connection.Connection)
-        self.conn.schema = self.mox.CreateMockAnything()
+        self.conn._schema = self.mox.CreateMockAnything()
 
     def test_dump_and_restore(self):
-        self.conn.schema.get_entities().AndReturn([
-                Entity('user'), Entity('group')])
-        self.conn.find('user', {}).AndReturn([
+        self.conn._schema.get_dependency_sequence().AndReturn(['user', 'group'])
+        self.conn.find('user',{'name': {'pattern': '^.*$', 'type': 'regexp'} }).AndReturn([
                 {'id': 1, 'name': 'user1'},
                 {'id': 2, 'name': 'user2'}])
-        self.conn.find('group', {}).AndReturn([])
+        self.conn.find('group', {'name': {'pattern': '^.*$', 'type': 'regexp'}}).AndReturn([])
 
         self.conn.create('user', {'id': 1, 'name': 'user1'})
         self.conn.create('user', {'id': 2, 'name': 'user2'})

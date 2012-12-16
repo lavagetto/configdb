@@ -10,6 +10,8 @@ from configdb import exceptions
 from configdb.db import schema
 from configdb.client import connection
 from configdb.client import query
+from configdb.client import backup
+
 
 log = logging.getLogger(__name__)
 pl = inflect.engine()
@@ -216,6 +218,34 @@ class AuditAction(object):
         log.info('audit query: %s', query)
         pprint(list(conn.get_audit(query)))
 
+class DumpAction(object):
+    """Dumps all configdb data to a file"""
+
+    name = 'dump'
+    descr = 'dump configdb data data to file'
+
+
+    def __init__(self, parser):
+        parser.add_argument('file')
+
+    def run(self, conn, entity, args):
+        d = backup.Dumper(conn)
+        with open(args.file, 'w') as fd:
+            d.dump(fd)
+        log.info("Dump completed to %s",args.file)
+
+class LoadAction(object):
+    name = 'load'
+    descr = 'loads configdb data from file'
+
+    def __init__(self, parser):
+        parser.add_argument('file')
+
+    def run(self, conn, entity, args):
+        d = backup.Dumper(conn)
+        with open(args.file, 'r') as fd:
+            d.restore(fd)
+        log.info("Load completed")
 
 class Parser(object):
 
@@ -229,6 +259,8 @@ class Parser(object):
 
     toplevel_actions = (
         AuditAction,
+        DumpAction,
+        LoadAction
         )
 
     def __init__(self, schema, **kw):
@@ -242,6 +274,7 @@ class Parser(object):
         self.parser.add_argument('--no-auth-store', dest='no_auth_store',
                                  action='store_true')
         self.parser.add_argument('--debug', action='store_true')
+    
 
     def _init_subparser(self, entity, parser):
         subparsers = parser.add_subparsers(

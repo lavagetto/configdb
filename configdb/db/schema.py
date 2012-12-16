@@ -224,10 +224,11 @@ class Schema(object):
     def get_dependency_sequence(self):
         sequence = []
         #create a copy of the entities dict.
-        entities = self.entities.copy()
-        while entities:
-            additions = []
-            for entity in entities.itervalues():
+        num = len(self.entities)
+        while len(sequence) < num:
+            for entity in self.entities.itervalues():
+                if entity.name in sequence:
+                    continue
                 valid = True
                 for (name, field) in entity.fields.iteritems():
                     if field.is_relation() and field.remote_name not in sequence:
@@ -236,9 +237,6 @@ class Schema(object):
                         break
                 if valid:
                     sequence.append(entity.name)
-                    additions.append(entity.name)
-            for name in additions:
-                del entities[name]
         return sequence
                     
     

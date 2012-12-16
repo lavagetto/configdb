@@ -43,9 +43,9 @@ class Dumper(object):
         self.conn = conn
 
     def dump(self, fd):
-        for entity in self.conn.schema.get_entities():
-            for obj in self.conn.find(entity.name, {}):
-                record_write(fd, entity.name, obj)
+        for entity in self.conn._schema.get_dependency_sequence():
+            for obj in self.conn.find(entity, {'name': {'type': 'regexp', 'pattern': '^.*$'}}):
+                record_write(fd, entity, obj)
 
     def restore(self, fd):
         while True:
