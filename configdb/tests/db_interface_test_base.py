@@ -10,9 +10,13 @@ class DbInterfaceTestBase(object):
         db = self.init_db()
         with db.session() as s:
             a = db.create('host', {'ip': '1.2.3.4', 'name': 'obz'}, s)
+            b = db.create('host', {'ip': '1.2.3.5', 'name': 'oba'}, s)
             r = db.create('role', {'name': 'role1'}, s)
+            q = db.create('role', {'name': 'role2'}, s)
             a.roles.append(r)
+            b.roles.append(q)
             s.add(a)
+            s.add(b)
         return db
         
     def test_init_ok(self):
