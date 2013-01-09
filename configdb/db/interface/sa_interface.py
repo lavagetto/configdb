@@ -110,10 +110,13 @@ class SqlAlchemyDbInterface(base.DbInterface):
             else:
                 field = entity.fields[field_name]
                 if field.is_relation():
-                    classattr = getattr(self._get_class(field.remote_name), 'name')
+                    remote_cls = self._get_class(field.remote_name)
+                    classattr = getattr(remote_cls, 'name')
+                    sa_query = sa_query.filter(getattr(classobj, field_name).any(
+                            q.get_filter(classattr)))
                 else:
                     classattr = getattr(classobj, field_name)
-                sa_query = sa_query.filter(q.get_filter(classattr))
+                    sa_query = sa_query.filter(q.get_filter(classattr))
 
         # Apply the post-process query to the SQL results.
         return self._run_query(entity, pp_query, sa_query)
