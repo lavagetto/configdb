@@ -318,10 +318,11 @@ class DbApiTestBase(object):
         self.assertTrue(r)
 
     def test_get_audit_fails_if_not_supported(self):
-        self.assertRaises(exceptions.NotImplementedError,
-                          self.api.get_audit,
-                          {'entity': 'user'},
-                          self.ctx)
+        if not self.db.AUDIT_SUPPORT:
+            self.assertRaises(NotImplementedError,
+                              self.api.get_audit,
+                              {'entity': 'user'},
+                              self.ctx)
 
     def test_get_audit_requires_entity_spec(self):
         self.assertRaises(exceptions.NotFound,
