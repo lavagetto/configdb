@@ -12,6 +12,8 @@ class DbApiTestBase(object):
             a = self.db.create('host', {'ip': u'1.2.3.4', 'name': u'obz'}, s)
             r = self.db.create('role', {'name': u'role1'}, s)
             a.roles.append(r)
+            r = self.db.create('role', {'name': u'role1b'}, s)
+            a.roles.append(r)
             s.add(a)
 
             r2 = self.db.create('role', {'name': u'role2'}, s)
@@ -91,7 +93,7 @@ class DbApiTestBase(object):
     def test_find_empty_query(self):
         result = list(
             self.api.find('role', {}, self.ctx))
-        self.assertEquals(2, len(result))
+        self.assertEquals(3, len(result))
 
     def test_find_multiple_criteria(self):
         result = list(
