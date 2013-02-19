@@ -29,14 +29,21 @@ def read_from_file(value):
     with open(value, 'r') as fd:
         return fd.read()
 
+class JsonPlain(object):
+    @staticmethod
+    def pprint(value):
+        """Pretty-print value as JSON."""
+        print json.dumps(value, sort_keys=True, indent=4)
 
-def pprint(value):
-    """Pretty-print value as JSON."""
-    print json.dumps(value, sort_keys=True, indent=4)
 
 
 class Action(object):
+    view = JsonPlain
 
+    @classmethod
+    def set_view(cls, viewclass):
+        cls.view = viewclass
+        
     def parse_field_value(self, field, value):
         type_map = {
             'string': str,
@@ -154,7 +161,7 @@ class GetAction(Action):
 
     def run(self, conn, entity, args):
         obj = conn.get(entity.name, args._name)
-        pprint(obj)
+        self.view.pprint(obj)
 
 
 class FindAction(Action):
@@ -184,7 +191,7 @@ class FindAction(Action):
 
     def run(self, conn, entity, args):
         objects = conn.find(entity.name, self._get_query(entity, args))
-        pprint(objects)
+        self.view.pprint(objects)
 
 
 class DeleteAction(Action):
@@ -216,7 +223,7 @@ class AuditAction(object):
                      for x in self.AUDIT_ATTRS
                      if getattr(args, x))
         log.info('audit query: %s', query)
-        pprint(list(conn.get_audit(query)))
+        self.view.pprint(list(conn.get_audit(query)))
 
 class DumpAction(object):
     """Dumps all configdb data to a file"""
