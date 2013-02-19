@@ -169,9 +169,14 @@ class Schema(object):
                 raise exceptions.SchemaError(
                     'invalid entity name "%s"' % tname)
             self.entities[tname] = Entity(tname, tdata)
+        self._add_timestamp()
         self._relation_check()
         self.default_acl = acl.AclMixin()
         self.default_acl.set_acl(DEFAULT_ACL)
+
+    def _add_timestamp(self):
+        ts_schema = {'name': { 'type': 'string', 'size': 16}, 'ts': {'type': 'int', 'nullable': False } }
+        self.entities['__timestamp__'] = Entity('__timestamp__', ts_schema)
 
     def _relation_check(self):
         """Verify that all relations reference existing entities."""
