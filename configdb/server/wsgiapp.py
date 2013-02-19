@@ -156,6 +156,14 @@ def find(class_name):
 def delete(class_name, object_name):
     return g.api.delete(class_name, object_name, g.auth_ctx)
 
+@api_app.route('/timestamp/<class_name>')
+@authenticate
+def ts(class_name):
+    try:
+        res = g.api.get_timestamp(class_name, g.auth_ctx)
+        return str(res.ts)
+    except exceptions.NotFound:
+        return "0"
 
 @api_app.route('/audit', methods=['POST'])
 @authenticate

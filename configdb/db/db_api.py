@@ -241,3 +241,21 @@ class AdmDbApi(object):
 
         self.schema.acl_check_entity(ent, auth_context, 'r', None)
         return self.db.get_audit(query, session)
+
+    @with_session
+    def get_timestamp(self, session, entity_name, auth_context):
+        """Get the timestamp of the last update on an entity.
+
+        """
+        ent = self.schema.get_entity(entity_name)
+        if not ent:
+            raise exceptions.NotFound(entity_name)
+
+        self.schema.acl_check_entity(ent, auth_context, 'r', None)
+
+        obj = self.db.get_by_name('__timestamp', entity_name, session)
+        if not obj:
+            raise exceptions.NotFound(entity_name)
+        return obj
+        
+                                  
