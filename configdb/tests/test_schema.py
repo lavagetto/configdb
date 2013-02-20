@@ -8,7 +8,7 @@ class SchemaTest(TestBase):
 
     def test_empty_schema_ok(self):
         s = schema.Schema('{}')
-        self.assertEquals({}, s.entities)
+        self.assertEquals(s.sys_schema_tables, s.entities.keys())
 
     def test_entity_without_name(self):
         data = """

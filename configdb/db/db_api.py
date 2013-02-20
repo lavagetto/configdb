@@ -1,4 +1,7 @@
 import functools
+
+from time import time
+
 from configdb import exceptions
 from configdb.db import acl
 from configdb.db import query
@@ -13,6 +16,14 @@ def with_session(fn):
             return fn(self, session, *args, **kwargs)
     return _with_session_wrapper
 
+
+def with_timestamp(fn):
+    @functools.wraps(fn)
+    def _with_timestamp_wrapper(self, session, entity_name, *args, **kwargs):
+        res = fn(self, session, entity_name, *args, **kwargs)
+        self.update_timestamp(session, entity_name)
+        return res
+    return _with_timestamp_wrapper
 
 def _field_validation(field, value):
     return field.validate(value)
@@ -102,7 +113,26 @@ class AdmDbApi(object):
             else:
                 setattr(obj, field_name, new_value)
 
+    def update_timestamp(self, session, entity_name):
+        if entity_name in self.schema.sys_schema_tables:
+            #Avoid updating timestamp for tables that are not part of the schema.
+            return True
+        
+        data = {'name': entity_name, 'ts': time() }
+        ts = self.schema.get_entity('__timestamp')
+        data = self._unpack(ts, data)
+
+        obj = self.db.get_by_name('__timestamp', entity_name, session)
+        if obj:
+            diffs = self._diff_object(ts, obj, data)
+            self._apply_diff(ts, obj, diffs, session)
+            session.add(obj)
+        else:
+            obj = self.db.create('__timestamp', data, session)
+        return True
+        
     @with_session
+    @with_timestamp
     def update(self, session, entity_name, object_name, data, auth_context):
         """Update an existing instance."""
         ent = self.schema.get_entity(entity_name)
@@ -125,6 +155,7 @@ class AdmDbApi(object):
         return True
 
     @with_session
+    @with_timestamp
     def delete(self, session, entity_name, object_name, auth_context):
         """Delete an instance."""
         ent = self.schema.get_entity(entity_name)
@@ -141,6 +172,7 @@ class AdmDbApi(object):
         return True
 
     @with_session
+    @with_timestamp
     def create(self, session, entity_name, data, auth_context):
         """Create a new instance."""
         ent = self.schema.get_entity(entity_name)
@@ -159,6 +191,8 @@ class AdmDbApi(object):
                           data, auth_context, session)
 
         return True
+
+    
 
     @with_session
     def get(self, session, entity_name, object_name, auth_context):
@@ -207,3 +241,21 @@ class AdmDbApi(object):
 
         self.schema.acl_check_entity(ent, auth_context, 'r', None)
         return self.db.get_audit(query, session)
+
+    @with_session
+    def get_timestamp(self, session, entity_name, auth_context):
+        """Get the timestamp of the last update on an entity.
+
+        """
+        ent = self.schema.get_entity(entity_name)
+        if not ent:
+            raise exceptions.NotFound(entity_name)
+
+        self.schema.acl_check_entity(ent, auth_context, 'r', None)
+
+        obj = self.db.get_by_name('__timestamp', entity_name, session)
+        if not obj:
+            raise exceptions.NotFound(entity_name)
+        return obj
+        
+                                  

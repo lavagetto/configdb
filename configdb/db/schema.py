@@ -160,18 +160,23 @@ class Schema(object):
     A schema consists of multiple Entities, each having multiple
     Fields. The definition is loaded from JSON-encoded data.
     """
-
+    sys_schema_tables = [ '__timestamp']                         
     def __init__(self, json_data):
         self.entities = {}
         schema_data = json.loads(json_data)
+        self._add_timestamp()
         for tname, tdata in schema_data.iteritems():
-            if not ENTITY_NAME_PATTERN.match(tname):
+            if not ENTITY_NAME_PATTERN.match(tname) or tname in self.sys_schema_tables:
                 raise exceptions.SchemaError(
                     'invalid entity name "%s"' % tname)
             self.entities[tname] = Entity(tname, tdata)
         self._relation_check()
         self.default_acl = acl.AclMixin()
         self.default_acl.set_acl(DEFAULT_ACL)
+
+    def _add_timestamp(self):
+        ts_schema = {'name': { 'type': 'string', 'size': 32}, 'ts': {'type': 'number', 'nullable': False } }
+        self.entities['__timestamp'] = Entity('__timestamp', ts_schema)
 
     def _relation_check(self):
         """Verify that all relations reference existing entities."""
@@ -190,7 +195,7 @@ class Schema(object):
         return self.entities.get(name)
 
     def get_entities(self):
-        return self.entities.itervalues()
+        return self.entities.itervalues() 
 
     def acl_check_fields(self, entity, fields, auth_context, op, obj):
         """Authorize an operation on the fields of an instance."""
