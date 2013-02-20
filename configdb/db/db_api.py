@@ -255,7 +255,7 @@ class AdmDbApi(object):
 
         obj = self.db.get_by_name('__timestamp', entity_name, session)
         if not obj:
-            raise exceptions.NotFound(entity_name)
+            raise ValueError("no timestamp for %s" % entity_name)
         return obj
         
                                   

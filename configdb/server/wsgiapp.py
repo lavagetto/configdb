@@ -163,7 +163,7 @@ def ts(class_name):
     try:
         res = g.api.get_timestamp(class_name, g.auth_ctx)
         return str(res.ts)
-    except exceptions.NotFound:
+    except ValueError:
         return "0"
 
 @api_app.route('/audit', methods=['POST'])
