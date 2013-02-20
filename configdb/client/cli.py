@@ -163,6 +163,18 @@ class GetAction(Action):
         obj = conn.get(entity.name, args._name)
         self.view.pprint(obj)
 
+class TimestampAction(Action):
+    """Get the timestamp of last update on an entity."""
+
+    name = 'timestamp'
+
+    def __init__(self, entity, parser):
+        pass
+
+    def run(self, conn, entity, args):
+        print conn.get_timestamp(entity.name)
+        
+
 
 class FindAction(Action):
     """Find instances."""
@@ -211,13 +223,18 @@ class AuditAction(object):
 
     name = 'audit'
     descr = 'query audit logs'
-
+    view = JsonPlain
+    
     AUDIT_ATTRS = ('entity', 'object', 'user', 'op')
 
+    @classmethod
+    def set_view(cls, viewclass):
+        cls.view = viewclass
+    
     def __init__(self, parser):
         for attr in self.AUDIT_ATTRS:
             parser.add_argument('--' + attr)
-
+            
     def run(self, conn, entity, args):
         query = dict((x, getattr(args, x))
                      for x in self.AUDIT_ATTRS
@@ -262,6 +279,7 @@ class Parser(object):
         UpdateAction,
         GetAction,
         FindAction,
+        TimestampAction
         )
 
     toplevel_actions = (
@@ -302,6 +320,8 @@ class Parser(object):
             help='use with --help for additional help',
             dest='_entity_name')
         for entity in self.schema.get_entities():
+            if entity.name in self.schema.sys_schema_tables:
+                continue
             subparser = subparsers.add_parser(entity.name,
                                               help=entity.description)
             self._init_subparser(entity, subparser)

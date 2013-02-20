@@ -204,7 +204,7 @@ class Connection(object):
             data = data.to_net()
         return [self._from_net(entity_name, x)
                 for x in self._call(entity_name, 'find', data=data)]
-
+    
     def get(self, entity_name, object_name):
         """Fetch a single object.
 
@@ -251,3 +251,16 @@ class Connection(object):
         """
         return self._request(['audit'], query)
 
+    def get_timestamp(self, entity_name):
+        """Fetch the timestamp of last update to a entity.
+
+        Args:
+          entity_name: string, entity name
+
+        Returns:
+          A String representing the unix epoch of last update
+
+        Raises:
+          None
+        """
+        return self._call(entity_name, 'timestamp')

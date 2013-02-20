@@ -175,7 +175,7 @@ class Schema(object):
         self.default_acl.set_acl(DEFAULT_ACL)
 
     def _add_timestamp(self):
-        ts_schema = {'name': { 'type': 'string', 'size': 32}, 'ts': {'type': 'int', 'nullable': False } }
+        ts_schema = {'name': { 'type': 'string', 'size': 32}, 'ts': {'type': 'number', 'nullable': False } }
         self.entities['__timestamp'] = Entity('__timestamp', ts_schema)
 
     def _relation_check(self):
@@ -195,7 +195,7 @@ class Schema(object):
         return self.entities.get(name)
 
     def get_entities(self):
-        return self.entities.itervalues()
+        return self.entities.itervalues() 
 
     def acl_check_fields(self, entity, fields, auth_context, op, obj):
         """Authorize an operation on the fields of an instance."""

@@ -158,6 +158,7 @@ def delete(class_name, object_name):
 
 @api_app.route('/timestamp/<class_name>')
 @authenticate
+@json_response
 def ts(class_name):
     try:
         res = g.api.get_timestamp(class_name, g.auth_ctx)

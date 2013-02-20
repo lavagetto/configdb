@@ -118,7 +118,7 @@ class AdmDbApi(object):
             #Avoid updating timestamp for tables that are not part of the schema.
             return True
         
-        data = {'name': entity_name, 'ts': int(time()) }
+        data = {'name': entity_name, 'ts': time() }
         ts = self.schema.get_entity('__timestamp')
         data = self._unpack(ts, data)
 

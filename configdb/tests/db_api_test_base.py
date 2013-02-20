@@ -204,7 +204,7 @@ class DbApiTestBase(object):
     #                       self.api.get('host', 'utz', self.ctx).name)
     #     self.assertRaises(exceptions.NotFound,
     #                       self.api.get, 'host', 'obz', self.ctx)
-
+        
     def test_update_modify_relation(self):
         self.assertTrue(
             self.api.update('host', 'obz', {'roles': ['role2']}, self.ctx))
@@ -347,3 +347,16 @@ class DbApiTestBase(object):
                           self.api.get_audit,
                           {'entity': 'private', 'op': 'create'},
                           auth_ctx)
+
+    def test_timestamp_is_updated(self):
+        result = self.api.update('host', 'obz', {'ip': '2.3.4.5'}, self.ctx)
+        self.assertTrue(result)
+        ts1 = self.api.get_timestamp('host', self.ctx).ts
+        self.assertTrue(ts1 != 0)
+        result = self.api.update('host', 'obz', {'ip': '3.3.3.5'}, self.ctx)
+        self.assertTrue(result)
+        ts2 = self.api.get_timestamp('host', self.ctx).ts
+        self.assertTrue(ts2 > ts1)
+
+    def test_timestamp_for_non_updated_entity(self):
+        self.assertRaises(ValueError, self.api.get_timestamp('role',self.ctx))
