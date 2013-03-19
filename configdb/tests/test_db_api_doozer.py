@@ -1,9 +1,11 @@
 import os
+from nose.exc import SkipTest
 try:
     import doozer
     from doozer.client import IsDirectory, NoEntity
+    if os.getenv('SKIP_DOOZER') is not None:
+        raise SkipTest('doozer tests disabled')
 except ImportError:
-    from nose.exc import SkipTest
     raise SkipTest('doozer not found')
 
 from configdb.db.interface import doozer_interface

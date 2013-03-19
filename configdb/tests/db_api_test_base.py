@@ -359,4 +359,4 @@ class DbApiTestBase(object):
         self.assertTrue(ts2 > ts1)
 
     def test_timestamp_for_non_updated_entity(self):
-        self.assertRaises(ValueError, self.api.get_timestamp,'role',self.ctx)
+        self.assertRaises(ValueError, self.api.get_timestamp, 'role', self.ctx)

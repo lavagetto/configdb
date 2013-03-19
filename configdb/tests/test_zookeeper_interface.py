@@ -1,8 +1,10 @@
 import os
+from nose.exc import SkipTest
 try:
     from configdb.db.interface import zookeeper_interface
+    if os.getenv('SKIP_ZOOKEEPER') is not None:
+        raise SkipTest('Zookeeper tests disabled')
 except ImportError:
-    from nose.exc import SkipTest
     raise SkipTest('Zookeeper not found')
 
 from configdb.tests import *
