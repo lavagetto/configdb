@@ -1,6 +1,7 @@
 from configdb import exceptions
 from configdb.db import db_api
 from configdb.db import acl
+import time
 
 
 class DbApiTestBase(object):
@@ -353,6 +354,7 @@ class DbApiTestBase(object):
         self.assertTrue(result)
         ts1 = self.api.get_timestamp('host', self.ctx).ts
         self.assertTrue(ts1 != 0)
+        time.sleep(0.01)
         result = self.api.update('host', 'obz', {'ip': '3.3.3.5'}, self.ctx)
         self.assertTrue(result)
         ts2 = self.api.get_timestamp('host', self.ctx).ts
