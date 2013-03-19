@@ -156,15 +156,13 @@ def find(class_name):
 def delete(class_name, object_name):
     return g.api.delete(class_name, object_name, g.auth_ctx)
 
+
 @api_app.route('/timestamp/<class_name>')
 @authenticate
 @json_response
 def ts(class_name):
-    try:
-        res = g.api.get_timestamp(class_name, g.auth_ctx)
-        return str(res.ts)
-    except ValueError:
-        return "0"
+    return g.api.get_timestamp(class_name, g.auth_ctx)
+
 
 @api_app.route('/audit', methods=['POST'])
 @authenticate

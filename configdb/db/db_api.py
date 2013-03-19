@@ -1,6 +1,5 @@
 import functools
-
-from time import time
+import time
 
 from configdb import exceptions
 from configdb.db import acl
@@ -24,6 +23,7 @@ def with_timestamp(fn):
         self.update_timestamp(session, entity_name)
         return res
     return _with_timestamp_wrapper
+
 
 def _field_validation(field, value):
     return field.validate(value)
@@ -118,7 +118,7 @@ class AdmDbApi(object):
             #Avoid updating timestamp for tables that are not part of the schema.
             return True
         
-        data = {'name': entity_name, 'ts': time() }
+        data = {'name': entity_name, 'ts': time.time() }
         ts = self.schema.get_entity('__timestamp')
         data = self._unpack(ts, data)
 
@@ -192,8 +192,6 @@ class AdmDbApi(object):
 
         return True
 
-    
-
     @with_session
     def get(self, session, entity_name, object_name, auth_context):
         """Return a specific instance."""
@@ -255,7 +253,5 @@ class AdmDbApi(object):
 
         obj = self.db.get_by_name('__timestamp', entity_name, session)
         if not obj:
-            raise ValueError("no timestamp for %s" % entity_name)
+            raise ValueError('no timestamp for %s' % entity_name)
         return obj
-        
-                                  
