@@ -83,6 +83,8 @@ class Relation(Field):
         if (isinstance(value, list)
             and (not len(value) or not isinstance(value[0], basestring))):
             return [x.name for x in value]
+        elif hasattr(value, 'to_net'):
+            return value.to_net()
         else:
             return value
 
@@ -161,7 +163,7 @@ class Schema(object):
     Fields. The definition is loaded from JSON-encoded data.
     """
 
-    sys_schema_tables = [ '__timestamp']                         
+    sys_schema_tables = [ '__timestamp']
 
     def __init__(self, json_data):
         self.entities = {}
@@ -245,5 +247,3 @@ class Schema(object):
                 if valid:
                     sequence.append(entity.name)
         return sequence
-                    
-    

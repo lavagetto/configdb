@@ -42,6 +42,10 @@ class InMemoryRelationProxy(object):
     def __repr__(self):
         return '<InMemoryRelationProxy: [%s]>' % ', '.join(self._objs)
 
+    def to_net(self):
+        return list(self._objs)
+
+
 
 class InMemoryObject(object):
 
@@ -110,5 +114,3 @@ class InMemoryDbInterface(base.DbInterface):
         entity = self.schema.get_entity(entity_name)
         return self._run_query(entity, query,
                                self._entities[entity_name].itervalues())
-
-
