@@ -55,14 +55,14 @@ def json_response(fn):
     True, the result will be found in the 'result' attribute,
     otherwise the 'error' attribute will contain details about the
     error.
-    
+
     Any exception in the wrapped method will be caught and wrapped.
     """
     @functools.wraps(fn)
     def _json_response_wrapper(*args, **kwargs):
         try:
             return jsonify(
-                {'ok': True, 
+                {'ok': True,
                  'result': fn(*args, **kwargs)})
         except Exception, e:
             log.exception('exception in url=%s' % request.url)

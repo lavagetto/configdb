@@ -15,6 +15,8 @@ class DbApiTestBase(object):
             a.roles.append(r)
             r = self.db.create('role', {'name': u'role1b'}, s)
             a.roles.append(r)
+            r = self.db.create('role', {'name': u'a/i'}, s)
+            a.roles.append(r)
             s.add(a)
 
             r2 = self.db.create('role', {'name': u'role2'}, s)
@@ -50,6 +52,11 @@ class DbApiTestBase(object):
         self.assertRaises(exceptions.NotFound,
                           self.api.get,
                           'whrarggh', 'obz', self.ctx)
+
+    def test_get_entity_with_slash(self):
+        result = self.api.get('role', 'a/i', self.ctx)
+        self.assertTrue(result is not None)
+        self.assertEquals('a/i', result.name)
 
     def test_find(self):
         result = list(
@@ -94,7 +101,7 @@ class DbApiTestBase(object):
     def test_find_empty_query(self):
         result = list(
             self.api.find('role', {}, self.ctx))
-        self.assertEquals(3, len(result))
+        self.assertEquals(4, len(result))
 
     def test_find_multiple_criteria(self):
         result = list(
@@ -205,7 +212,7 @@ class DbApiTestBase(object):
     #                       self.api.get('host', 'utz', self.ctx).name)
     #     self.assertRaises(exceptions.NotFound,
     #                       self.api.get, 'host', 'obz', self.ctx)
-        
+
     def test_update_modify_relation(self):
         self.assertTrue(
             self.api.update('host', 'obz', {'roles': ['role2']}, self.ctx))
@@ -241,7 +248,7 @@ class DbApiTestBase(object):
         self.assertRaises(exceptions.ValidationError,
                           self.api.update,
                           'user', 'testuser',
-                          {'last_login': 'not_a_valid_iso_timestamp'}, 
+                          {'last_login': 'not_a_valid_iso_timestamp'},
                           self.ctx)
 
     def test_update_unknown_entity_error(self):

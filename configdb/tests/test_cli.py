@@ -55,7 +55,7 @@ class CliTest(mox.MoxTestBase):
 
     def setUp(self):
         mox.MoxTestBase.setUp(self)
-        self.mox.StubOutWithMock(connection, 'Connection', 
+        self.mox.StubOutWithMock(connection, 'Connection',
                                  use_mock_anything=True)
         self.mox.StubOutWithMock(os, 'getenv')
         self._tmpdir = tempfile.mkdtemp()
@@ -82,6 +82,15 @@ class CliTest(mox.MoxTestBase):
 
         self.assertEquals(
             0, cli.main(['host', 'get', 'obz']))
+
+    def test_get_object_with_slash(self):
+        self._connect()
+        self.conn.get('host', 'a/i e').AndReturn('ok')
+        self.mox.ReplayAll()
+
+        self.assertEquals(
+            0, cli.main(['host', 'get', 'a/i e']))
+
 
     def test_find_object(self):
         self._connect()
@@ -236,4 +245,3 @@ class CliTest(mox.MoxTestBase):
         self.assertEquals(
             0, cli.main(
                 ['audit', '--entity=host', '--object=obz']))
-            
