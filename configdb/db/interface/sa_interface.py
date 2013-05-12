@@ -56,7 +56,7 @@ class SqlAlchemyDbInterface(base.DbInterface):
         self.engine = create_engine(uri, pool_recycle=1800)
         self.Session.configure(bind=self.engine)
         Base.metadata.create_all(self.engine)
-        
+
     def _load_schema(self):
         with tempfile.NamedTemporaryFile() as schema_file:
             schema_gen = sa_generator.SqlAlchemyGenerator(self._schema)
@@ -94,7 +94,7 @@ class SqlAlchemyDbInterface(base.DbInterface):
     def get_by_name(self, entity_name, object_name, session):
         return session.query(self._get_class(entity_name)).filter_by(
             name=object_name).first()
-    
+
     def find(self, entity_name, query, session):
         classobj = self._get_class(entity_name)
         entity = self._schema.get_entity(entity_name)
