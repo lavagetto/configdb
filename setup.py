@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
   name='configdb',
-  version='0.2',
+  version='0.2.1',
   description='database framework for configuration info',
   author='ale',
   author_email='ale@incal.net',
