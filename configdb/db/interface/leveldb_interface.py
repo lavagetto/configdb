@@ -69,8 +69,8 @@ class LevelDbInterface(base.DbInterface):
             return None
 
     def _find_all(self, entity_name):
-        cursor = self.db.RangeIter(u'%s:' % entity_name,
-                                   u'%s:\xff' % entity_name)
+        final = entity_name.encode('utf-8') + '\xff'
+        cursor = self.db.RangeIter(u'%s:' % entity_name, final)
         for key, serialized_data in cursor:
             yield self._deserialize(serialized_data)
 
