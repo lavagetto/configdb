@@ -125,7 +125,7 @@ def create(class_name):
     return g.api.create(class_name, g.request_data, g.auth_ctx)
 
 
-@api_app.route('/get/<class_name>/<object_name>')
+@api_app.route('/get/<class_name>/<path:object_name>')
 @authenticate
 @json_response
 def get(class_name, object_name):
@@ -133,7 +133,7 @@ def get(class_name, object_name):
                    g.api.get(class_name, object_name, g.auth_ctx))
 
 
-@api_app.route('/update/<class_name>/<object_name>', methods=['POST'])
+@api_app.route('/update/<class_name>/<path:object_name>', methods=['POST'])
 @authenticate
 @json_request
 @json_response
@@ -150,7 +150,7 @@ def find(class_name):
                    g.api.find(class_name, g.request_data, g.auth_ctx))
 
 
-@api_app.route('/delete/<class_name>/<object_name>')
+@api_app.route('/delete/<class_name>/<path:object_name>')
 @authenticate
 @json_response
 def delete(class_name, object_name):
