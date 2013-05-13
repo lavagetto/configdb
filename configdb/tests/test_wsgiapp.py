@@ -48,6 +48,8 @@ class WsgiTest(TestBase):
             u = db.create('user', {'name': 'user1',
                                    'last_login': datetime(2006, 1, 1)}, s)
             a.roles.append(r)
+
+            r2 = db.create('role', {'name': u'a/i black ops'}, s)
             db.add_audit('host', 'obz', 'create', {'ip': '1.2.3.4',
                                                    'name': 'obz'},
                          acl.AuthContext('admin'), s)
@@ -108,6 +110,11 @@ class WsgiTest(TestBase):
                            'ssh_keys': []},
                           result)
 
+    def test_get_entity_with_slashes(self):
+        self._login()
+        rv = self.app.get('/get/role/a%2Fi%20black%20ops')
+        self.assertEquals(200, rv.status_code)
+
     def test_create(self):
         self._login()
         rv = self.app.post('/create/user',
@@ -165,6 +172,13 @@ class WsgiTest(TestBase):
         data = json.loads(rv.data)
         self.assertEquals({'ok': True, 'result': True}, data)
 
+    def test_update_entity_with_slashes(self):
+        self._login()
+        rv = self.app.post('/update/role/a%2Fi%20black%20ops',
+                           data=json.dumps({'name': 'a/i'}),
+                           content_type='application/json')
+        self.assertEquals(200, rv.status_code)
+
     def test_find(self):
         self._login()
         query = {'name': {'type': 'eq', 'value': 'obz'},
@@ -179,9 +193,17 @@ class WsgiTest(TestBase):
         self.assertEquals(1, len(result))
         self.assertEquals('obz', result[0]['name'])
 
+
     def test_delete(self):
         self._login()
         rv = self.app.get('/delete/host/obz')
+        self.assertEquals(200, rv.status_code)
+        data = json.loads(rv.data)
+        self.assertEquals({'ok': True, 'result': True}, data)
+
+    def test_delete_entity_with_slashes(self):
+        self._login()
+        rv = self.app.get('/delete/role/a%2Fi')
         self.assertEquals(200, rv.status_code)
         data = json.loads(rv.data)
         self.assertEquals({'ok': True, 'result': True}, data)
