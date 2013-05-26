@@ -6,6 +6,7 @@ import logging
 import re
 import os
 import sys
+import datetime
 from configdb import exceptions
 from configdb.db import schema
 from configdb.client import connection
@@ -29,11 +30,21 @@ def read_from_file(value):
     with open(value, 'r') as fd:
         return fd.read()
 
+
+class CfdbEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat()
+        # Let the base class default method raise the TypeError
+        return json.JSONEncoder.default(self, obj)
+
+
 class JsonPlain(object):
     @staticmethod
     def pprint(value):
         """Pretty-print value as JSON."""
-        print json.dumps(value, sort_keys=True, indent=4)
+
+        print json.dumps(value, sort_keys=True, indent=4, cls=CfdbEncoder)
 
 
 
@@ -43,12 +54,12 @@ class Action(object):
     @classmethod
     def set_view(cls, viewclass):
         cls.view = viewclass
-        
+
     def parse_field_value(self, field, value):
         type_map = {
             'string': str,
             'int': int,
-	    'number': float,
+            'number': float,
             'password': read_password,
             'text': read_from_file,
             'binary': read_from_file,
@@ -173,7 +184,7 @@ class TimestampAction(Action):
 
     def run(self, conn, entity, args):
         print conn.get_timestamp(entity.name)
-        
+
 
 
 class FindAction(Action):
@@ -224,17 +235,17 @@ class AuditAction(object):
     name = 'audit'
     descr = 'query audit logs'
     view = JsonPlain
-    
+
     AUDIT_ATTRS = ('entity', 'object', 'user', 'op')
 
     @classmethod
     def set_view(cls, viewclass):
         cls.view = viewclass
-    
+
     def __init__(self, parser):
         for attr in self.AUDIT_ATTRS:
             parser.add_argument('--' + attr)
-            
+
     def run(self, conn, entity, args):
         query = dict((x, getattr(args, x))
                      for x in self.AUDIT_ATTRS
@@ -299,7 +310,7 @@ class Parser(object):
         self.parser.add_argument('--no-auth-store', dest='no_auth_store',
                                  action='store_true')
         self.parser.add_argument('--debug', action='store_true')
-    
+
 
     def _init_subparser(self, entity, parser):
         subparsers = parser.add_subparsers(
