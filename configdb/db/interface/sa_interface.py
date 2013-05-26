@@ -73,7 +73,8 @@ class SqlAlchemyDbInterface(base.DbInterface):
     def add_audit(self, entity_name, object_name, operation,
                   data, auth_ctx, session):
         ins = self._objs['audit_table'].insert()
-        data = self._schema.get_entity(entity_name).to_net(data)
+        if data is not None:
+            data = self._schema.get_entity(entity_name).to_net(data)
         session.execute(ins, {'entity': entity_name,
                               'object': object_name,
                               'op': operation,
