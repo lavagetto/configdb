@@ -7,6 +7,7 @@ import re
 import os
 import sys
 import datetime
+import dateutil
 from configdb import exceptions
 from configdb.db import schema
 from configdb.client import connection
@@ -30,6 +31,16 @@ def read_from_file(value):
     with open(value, 'r') as fd:
         return fd.read()
 
+type_map = {
+    'string': str,
+    'int': int,
+    'number': float,
+    'password': read_password,
+    'text': read_from_file,
+    'binary': read_from_file,
+    'relation': lambda x: x.split(','),
+    'datetime': dateutil.parser.parse
+}
 
 class CfdbEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -56,15 +67,8 @@ class Action(object):
         cls.view = viewclass
 
     def parse_field_value(self, field, value):
-        type_map = {
-            'string': str,
-            'int': int,
-            'number': float,
-            'password': read_password,
-            'text': read_from_file,
-            'binary': read_from_file,
-            'relation': lambda x: x.split(','),
-            }
+        if not field.type in type_map:
+            return value
         return type_map[field.type](value)
 
     def add_standard_entity_fields(self, entity, parser):
@@ -121,6 +125,8 @@ class UpdateAction(Action):
                 parser.add_argument(opt_name, help=descr,
                                     dest=field.name)
                 self.has_relations = True
+            elif field.type == 'password':
+                parser.add_argument('--password', help='interactively asks for a password', action='store_true')
             else:
                 opt_name = '--%s' % field.name
                 parser.add_argument(opt_name, help=descr,
@@ -155,8 +161,9 @@ class UpdateAction(Action):
             else:
                 # Auto-clear items.
                 if not value:
-                    value = None
-                update_data[field.name] = value
+                    update_data[field.name] = None
+                else:
+                    update_data[field.name] = self.parse_field_value(field, value)
 
         log.info('update: %s/%s %s', entity.name, args._name, update_data)
         conn.update(entity.name, args._name, update_data)
