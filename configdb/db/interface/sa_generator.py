@@ -58,6 +58,8 @@ class %(class_name)s(Base):
         type_args = []
         if 'size' in field.attrs:
             type_args.append(str(field.attrs['size']))
+        elif field.type == 'string': #needed for mysql that needs a size for varchars
+            type_args.append('256')
         return '%s(%s)' % (type_map[field.type],
                            ', '.join(type_args))
 
