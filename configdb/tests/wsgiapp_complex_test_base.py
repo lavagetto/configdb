@@ -1,18 +1,14 @@
 import json
-import os
 from werkzeug.exceptions import Forbidden
 from datetime import datetime
-from configdb.db import acl
-from configdb.tests import *
+#from configdb.tests import *
 
 
-
-class WsgiComplexTest(WsgiTestBase):
+class WsgiComplexTestBase(object):
 
     def setUp(self):
-        WsgiTestBase.setUp(self)
-
-        app = self.create_app_with_schema('schema-large-noacl.json')
+        args = self.get_app_args()
+        app = self.create_app_with_schema('schema-large-noacl.json', **args)
         self.wsgiapp = app
         self.app = app.test_client()
 
