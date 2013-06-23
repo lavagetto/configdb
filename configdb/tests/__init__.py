@@ -1,87 +1,11 @@
+import os
 import unittest
 import shutil
 import tempfile
+from configdb.db import acl
 from configdb.db import schema
+from configdb.server import wsgiapp
 from nose.plugins.attrib import attr
-
-
-TEST_SCHEMA = '''
-{
-"host": {
-  "name": {
-    "type": "string"
-  },
-  "ip": {
-    "type": "string",
-    "validator": "ip"
-  },
-  "ip6": {
-    "type": "string"
-  },
-  "roles": {
-    "type": "relation",
-    "rel": "role"
-  },
-  "ghz": {
-    "type": "number"
-  },
-  "_acl": {
-    "r": "*", "w": "user/admin"
-  }
-},
-"role": {
-  "name": {
-    "type": "string"
-  }
-},
-"user": {
-  "name": {
-    "type": "string"
-  },
-  "last_login": {
-    "type": "datetime"
-  },
-  "password": {
-    "type": "password",
-    "size": 64
-  },
-  "enabled": {
-    "type": "bool",
-    "default": "True"
-  },
-  "ssh_keys": {
-    "type": "relation",
-    "rel": "ssh_key",
-    "acl": {
-      "w": "user/admin,@self"
-    }
-  },
-  "_acl": {
-    "r": "*", "w": "user/admin"
-  }
-},
-"ssh_key": {
-  "name": {
-    "type": "string"
-  },
-  "key": {
-    "type": "text"
-  },
-  "_acl": {
-    "w": "@users"
-  }
-},
-"private": {
-  "name": {
-    "type": "string"
-  },
-  "_acl": {
-    "r": "user/admin",
-    "w": "user/admin"
-  }
-}
-}
-'''
 
 
 class TestBase(unittest.TestCase):
@@ -93,5 +17,37 @@ class TestBase(unittest.TestCase):
         shutil.rmtree(self._tmpdir)
 
     def get_schema(self):
-        self._schema = schema.Schema(TEST_SCHEMA)
+        schema_file = os.path.join(
+            os.path.dirname(__file__), 'schema-simple.json')
+        with open(schema_file, 'r') as fd:
+            self._schema = schema.Schema(fd.read())
         return self._schema
+
+
+def auth_fn(api, data):
+    username = data.get('username')
+    password = data.get('password')
+    if username == 'admin' and password == 'admin':
+        return username
+
+def auth_context_fn(api, auth_token):
+    return acl.AuthContext(auth_token)
+
+
+class WsgiTestBase(TestBase):
+
+    def create_app(self, **kwargs):
+        config = {
+            'DEBUG': True,
+            'TESTING': True,
+            'SECRET_KEY': 'test key',
+            'AUTH_FN': auth_fn,
+            'AUTH_CONTEXT_FN': auth_context_fn,
+        }
+        config.update(kwargs)
+        return wsgiapp.make_app(config)
+
+    def create_app_with_schema(self, schema_file, **kwargs):
+        schema_file = os.path.join(
+            os.path.dirname(__file__), schema_file)
+        return self.create_app(SCHEMA_FILE=schema_file, **kwargs)

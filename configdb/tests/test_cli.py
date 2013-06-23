@@ -9,7 +9,6 @@ from configdb.client import query
 from configdb.tests import *
 
 
-
 class CliMainTest(mox.MoxTestBase):
 
     def setUp(self):
@@ -65,9 +64,8 @@ class CliTest(mox.MoxTestBase):
         mox.MoxTestBase.tearDown(self)
 
     def _connect(self):
-        schema_file = os.path.join(self._tmpdir, 'schema.json')
-        with open(schema_file, 'w') as fd:
-            fd.write(TEST_SCHEMA)
+        schema_file = os.path.join(
+            os.path.dirname(__file__), 'schema-simple.json')
         os.getenv('SCHEMA_FILE').AndReturn(schema_file)
 
         self.conn = self.mox.CreateMockAnything()

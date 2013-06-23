@@ -1,0 +1,75 @@
+{
+"host": {
+  "name": {
+    "type": "string"
+  },
+  "ip": {
+    "type": "string",
+    "validator": "ip"
+  },
+  "ip6": {
+    "type": "string"
+  },
+  "roles": {
+    "type": "relation",
+    "rel": "role"
+  },
+  "ghz": {
+    "type": "number"
+  },
+  "_acl": {
+    "r": "*", "w": "user/admin"
+  }
+},
+"role": {
+  "name": {
+    "type": "string"
+  }
+},
+"user": {
+  "name": {
+    "type": "string"
+  },
+  "last_login": {
+    "type": "datetime"
+  },
+  "password": {
+    "type": "password",
+    "size": 64
+  },
+  "enabled": {
+    "type": "bool",
+    "default": "True"
+  },
+  "ssh_keys": {
+    "type": "relation",
+    "rel": "ssh_key",
+    "acl": {
+      "w": "user/admin,@self"
+    }
+  },
+  "_acl": {
+    "r": "*", "w": "user/admin"
+  }
+},
+"ssh_key": {
+  "name": {
+    "type": "string"
+  },
+  "key": {
+    "type": "text"
+  },
+  "_acl": {
+    "w": "@users"
+  }
+},
+"private": {
+  "name": {
+    "type": "string"
+  },
+  "_acl": {
+    "r": "user/admin",
+    "w": "user/admin"
+  }
+}
+}
