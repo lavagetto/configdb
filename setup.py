@@ -4,13 +4,13 @@ from setuptools import setup, find_packages
 
 setup(
   name='configdb',
-  version='0.2.1',
+  version='0.2.2',
   description='database framework for configuration info',
   author='ale',
   author_email='ale@incal.net',
   url='http://git.autistici.org/p/configdb',
   install_requires=['argparse', 'Flask', 'formencode', 'inflect',
-                    'SQLAlchemy>0.7', 'python-dateutil'],
+                    'SQLAlchemy>0.7', 'python-dateutil', 'ipaddr'],
   setup_requires=[],
   zip_safe=True,
   packages=find_packages(),
@@ -21,4 +21,3 @@ setup(
     ],
   },
   )
-

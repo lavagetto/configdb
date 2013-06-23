@@ -1,4 +1,5 @@
 import formencode
+import ipaddr
 from formencode import validators
 
 Invalid = formencode.Invalid
@@ -16,6 +17,14 @@ class RelationValidator(formencode.FancyValidator):
             return value
         raise Invalid('relation not a list of strings', value, state)
 
+class IP6Address(formencode.FancyValidator):
+    def _to_python(self, addr, state):
+        try:
+            ipaddr.IPv6Network( address=addr )
+            return addr
+        except ipaddr.AddressValueError, e:
+            raise Invalid('Not a well formed IPv6 address', addr, state)
+
 
 _validator_map = {
     'int': validators.Int(),
@@ -28,7 +37,10 @@ _validator_map = {
     'ip': validators.IPAddress(),
     'cidr': validators.CIDR(),
     'relation': RelationValidator(),
+    'ip6': IP6Address(),
     }
+
+
 
 
 class ValidatorMixin(object):
