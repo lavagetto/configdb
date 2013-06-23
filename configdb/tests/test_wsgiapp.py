@@ -36,19 +36,6 @@ class WsgiTest(WsgiTestBase):
                                                    'name': 'obz'},
                          acl.AuthContext('admin'), s)
 
-    def _parse(self, rv):
-        self.assertEquals(200, rv.status_code)
-        data = json.loads(rv.data)
-        self.assertTrue(data['ok'])
-        return data['result']
-
-    def _login(self):
-        rv = self.app.post('/login',
-                           data=json.dumps({'username': 'admin',
-                                            'password': 'admin'}),
-                           content_type='application/json')
-        self.assertEquals(200, rv.status_code)
-
     def test_config_without_schema_file_raises_exception(self):
         self.assertRaises(Exception,
                           wsgiapp.make_app, {})
@@ -227,3 +214,4 @@ class WsgiTest(WsgiTestBase):
         data = json.loads(rv.data)
         self.assertEquals(
             {'ok': False, 'error': 'Authentication error'}, data)
+

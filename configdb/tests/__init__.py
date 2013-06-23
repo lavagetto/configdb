@@ -1,3 +1,4 @@
+import json
 import os
 import unittest
 import shutil
@@ -51,3 +52,16 @@ class WsgiTestBase(TestBase):
         schema_file = os.path.join(
             os.path.dirname(__file__), schema_file)
         return self.create_app(SCHEMA_FILE=schema_file, **kwargs)
+
+    def _login(self):
+        rv = self.app.post('/login',
+                           data=json.dumps({'username': 'admin',
+                                            'password': 'admin'}),
+                           content_type='application/json')
+        self.assertEquals(200, rv.status_code)
+
+    def _parse(self, rv):
+        self.assertEquals(200, rv.status_code)
+        data = json.loads(rv.data)
+        self.assertTrue(data['ok'])
+        return data['result']

@@ -1,0 +1,189 @@
+{
+    "user": {
+        "_help": "user model",
+        "name": {
+            "type": "string",
+            "index": true,
+            "nullable": false
+        },
+        "uid": {
+            "type": "int",
+            "index": true
+        },
+        "password": {
+            "type": "password",
+            "nullable": false
+        },
+        "groups": {
+            "type": "relation",
+            "rel": "group",
+	        "identifier": 1
+        },
+        "ssh_key": {
+            "type": "text"
+        },
+        "home": {
+            "type": "string"
+        },
+        "email": {
+            "type": "string"
+        },
+        "shell": {
+            "type": "string",
+            "size": 32,
+            "default": "'/bin/bash'"
+        },
+        "enabled": {
+            "type": "bool",
+            "default": true
+        },
+        "created_at": {
+            "type": "datetime"
+        },
+        "updated_at": {
+            "type": "datetime"
+        }
+    },
+    "group": {
+
+        "name": {
+            "type": "string",
+            "index": true,
+            "nullable": false
+        },
+        "gid": {
+            "type": "int",
+            "index": true
+        },
+        "created_at": {
+            "type": "datetime"
+        },
+        "updated_at": {
+            "type": "datetime"
+        },
+        "owners": {
+            "type": "relation",
+            "rel": "user"
+        },
+        "users": {
+            "type": "relation",
+            "rel": "user",
+            "identifier": 1
+        }
+    },
+    "role": {
+        "name": {
+            "type": "string"
+        }
+    },
+    "host_ssh_key": {
+        "name": {
+            "type": "string"
+        },
+        "key": {
+            "type": "text"
+        },
+        "type": {
+            "type": "string"
+        }
+    },
+    "host": {
+        "name": {
+            "type" : "string"
+        },
+        "server_type" :{
+            "type" : "string",
+            "size": 16
+        },
+        "ip": {
+            "type": "string",
+            "size": 16,
+            "nullable": true,
+            "validator": "ip"
+        },
+        "public_id": {
+            "type": "int"
+        },
+        "cfengine_key": {
+            "type": "text"
+        },
+        "root_ssh_key": {
+            "type": "text"
+        },
+        "host_ssh_keys": {
+            "type": "relation",
+            "rel": "host_ssh_key"
+        },
+        "created_at": {
+            "type": "datetime"
+        },
+        "updated_at": {
+            "type": "datetime"
+        },
+        "roles": {
+            "type": "relation",
+            "rel": "role"
+        },
+        "sudo_users": {
+            "type": "relation",
+            "rel": "user",
+            "identifier": 1
+        },
+        "login_users": {
+            "type": "relation",
+            "rel": "user",
+            "identifier": 2
+        },
+        "sudo_groups": {
+            "type": "relation",
+            "rel": "group"
+        },
+        "vpn_interfaces": {
+            "type": "relation",
+            "rel": "vpn_interface"
+        },
+        "location": {
+            "type": "string",
+            "size": 64
+        },
+        "notes": {
+            "type": "text"
+        }
+    },
+    "vpn_interface": {
+        "name": {
+            "type": "string",
+            "size": 128
+        },
+        "ip": {
+            "type": "string",
+            "size": 16,
+            "nullable": false,
+            "validator": "ip"
+        },
+        "mtu": {
+            "type": "int"
+        },
+        "rsa_key": {
+            "type": "text"
+        },
+        "vpns": {
+            "type": "relation",
+            "rel": "vpn"
+        }
+    },
+    "vpn": {
+        "name": {
+            "type": "string",
+            "size": 64
+        },
+        "network": {
+            "type": "string",
+            "size": 32
+        },
+        "port": {
+            "type": "int"
+        }
+    }
+
+}
