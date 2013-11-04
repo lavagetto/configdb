@@ -4,7 +4,7 @@ import etcd
 import cPickle as pickle
 import os
 from urlparse import urlparse
-
+from configdb.db.interface import inmemory_interface
 
 class EtcdSession(object):
     """A EtcdInterface session."""
@@ -43,7 +43,7 @@ class EtcdSession(object):
         pass
 
 
-class EtcdInterface(base,DbInterface):
+class EtcdInterface(base.DbInterface):
     """Database interface for an Etcd backend.
 
     This needs the 'python-etcd' library, available at:
@@ -54,10 +54,14 @@ class EtcdInterface(base,DbInterface):
 
     def __init__(self, url, schema, root='/configdb', timeout=30):
         self.root = root
-        res =
+        try:
+            p = urlparse(url)
+            host, port = p.netloc.split(':')
+        except ValueError:
+            raise ValueError('Url {} is not in the host:port format'.format(p.netloc))
 
-        self.conn = etcd.Client()
-        pass
+        self.conn = etcd.Client(host=host, port=port, protocol = p.schema, allow_reconnect = True)
+
 
     def _serialize(self, obj):
         return pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL)
@@ -75,6 +79,8 @@ class EtcdInterface(base,DbInterface):
         raise NotImplementedError
 
     def create(self, entity_name, attrs, session):
+        entity = self.schema.get_entity(entity_name)
+        object =
         raise NotImplementedError
 
     def delete(self, entity_name, object_name, session):
