@@ -185,6 +185,11 @@ class DbApiTestBase(object):
                           'host', {'name': 'host2', 'ip': '299.0.0.1'},
                           self.ctx)
 
+    def test_create_existing_object(self):
+        host_data = {'name': 'obz', 'ip': '2.3.4.5'}
+        self.assertRaises(
+            Exception, self.api.create,'host', host_data, self.ctx)
+
     def test_update_ok(self):
         result = self.api.update('host', 'obz', {'ip': '2.3.4.5'}, self.ctx)
         self.assertTrue(result)

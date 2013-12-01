@@ -19,3 +19,9 @@ class EtcdInterfaceTest(DbApiTestBase, TestBase):
     def init_db(self):
         return etcd_interface.EtcdInterface(
             'http://127.0.0.1:4001', self.get_schema(), self.TESTROOT)
+
+    def tearDown(self):
+        try:
+            self.db.conn.delete(self.TESTROOT, recursive = True)
+        except KeyError:
+            pass
