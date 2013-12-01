@@ -213,7 +213,7 @@ class SchemaSerializationTest(TestBase):
     def test_deserialization_error(self):
         data = {'stamp': 'not-a-timestamp'}
         self.assertRaises(
-            ValueError,
+            TypeError,
             self.ent.from_net, data)
 
 
@@ -325,4 +325,3 @@ class SchemaAclTest(TestBase):
             ent, ['name', 'role'],
             acl.AuthContext('testuser'),
             'w', None)
-

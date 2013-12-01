@@ -1,40 +1,86 @@
 # You need the etcd python client library you can find here:
 # https://github.com/lavagetto/python-etcd
-import etcd
-import cPickle as pickle
 import os
+import time
+import base64
+import urllib
 from urlparse import urlparse
+import cPickle as pickle
+import json
+
+import etcd
+
+from configdb import exceptions
+from configdb.db.interface import base
 from configdb.db.interface import inmemory_interface
 
-class EtcdSession(object):
+
+class EtcdSession(inmemory_interface.InMemorySession):
     """A EtcdInterface session."""
+
     def __init__(self,db):
         self.db = db
-        raise NotImplementedError
 
-    def _mkpath(self, entity_name, object_name):
-        return os.path.join(self.db.root, entity_name, object_name)
+    def _escape(self,s):
+        # Hack alert! Since etcd interprets any '/' as a dir separator,
+        # we simply replace it with a double backslash in the path.
+        # this of course introduces a potential bug.
+        s = s.replace('/','\\\\')
+        return urllib.quote(s, safe='')
+
+    def _mkpath(self, entity_name, obj_name=None):
+        path = os.path.join(self.db.root, self._escape(entity_name))
+        if obj_name:
+            path = os.path.join(path, self._escape(obj_name))
+        return path
+
 
     def add(self, obj):
         path = self._mkpath(obj._entity_name, obj.name)
-        #TODO: test for presence of an old object and do test_and_set
-        self.db.conn.set(path, self.db._serialize(obj))
+        try:
+            idx = self.db.conn.read(path).modifiedIndex
+            opts = {'prevIndex': idx}
+        except KeyError:
+            opts = {'prevExists': False}
 
+        # Will raise ValueError if the test fails.
+        try:
+            self.db.conn.write(path, self.db._serialize(obj), **opts)
+        except ValueError:
+            raise exceptions.IntegrityError('Bad revision')
 
     def delete(self, obj):
-        raise NotImplementedError
+        self._delte_by_name(obj._entity_name, obj.name)
+
 
     def _delete_by_name(self, entity_name, obj_name):
-        raise NotImplementedError
+        path = self._mkpath(entity_name, obj_name)
+        try:
+            #etcd has no way to atomically delete objects. Meh!
+            self.db.conn.delete(path)
+        except KeyError:
+            pass
+
 
     def _deserialize_if_not_none(self, data):
-        raise NotImplementedError
+        if data:
+            return self.db._deserialize(data)
+        else:
+            return None
 
     def _get(self, entity_name, obj_name):
-        raise NotImplementedError
+        path = self._mkpath(entity_name, obj_name)
+        try:
+            data = self.db.conn.read(path).value
+            return self._deserialize_if_not_none(data)
+        except KeyError:
+            pass
 
     def _find(self, entity_name):
-        raise NotImplementedError
+        path = self._mkpath(entity_name)
+        for r in self.db.conn.read(path, recursive = True).kvs:
+            if not r.dir:
+                yield self._deserialize_if_not_none(r.value)
 
     def commit(self):
         pass
@@ -52,22 +98,31 @@ class EtcdInterface(base.DbInterface):
 
     """
 
+    AUDIT_SUPPORT = True
+    AUDIT_LOG_LENGTH = 100
+
     def __init__(self, url, schema, root='/configdb', timeout=30):
         self.root = root
+        self.schema = schema
         try:
             p = urlparse(url)
             host, port = p.netloc.split(':')
         except ValueError:
-            raise ValueError('Url {} is not in the host:port format'.format(p.netloc))
+            raise ValueError(
+                'Url {} is not in the host:port format'.format(p.netloc))
 
-        self.conn = etcd.Client(host=host, port=port, protocol = p.schema, allow_reconnect = True)
+        #TODO: find a way to allow use of SSL client certificates.
+        self.conn = etcd.Client(
+            host=host, port=int(port), protocol = p.scheme, allow_reconnect = True)
 
 
     def _serialize(self, obj):
-        return pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL)
+        return base64.b64encode(
+            pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL))
+
 
     def _deserialize(self, data):
-        return pickle.loads(data)
+        return pickle.loads(base64.b64decode(data))
 
     def session(self):
         return base.session_context_manager(EtcdSession(self))
@@ -76,15 +131,88 @@ class EtcdInterface(base.DbInterface):
         return session._get(entity_name, object_name)
 
     def find(self, entity_name, query, session):
-        raise NotImplementedError
+        entity = self.schema.get_entity(entity_name)
+        return self._run_query(entity, query,
+                               session._find(entity_name))
+
 
     def create(self, entity_name, attrs, session):
         entity = self.schema.get_entity(entity_name)
-        object =
-        raise NotImplementedError
+        obj = inmemory_interface.InMemoryObject(entity, attrs)
+        session.add(obj)
+        return obj
 
-    def delete(self, entity_name, object_name, session):
-        raise NotImplementedError
+    def delete(self, entity_name, obj_name, session):
+        session._delete_by_name(entity_name, obj_name)
 
     def close(self):
-        pass
+        self.conn.http.clear()
+
+
+    def _get_audit_slot(self):
+        path = os.path.join(self.root, '_audit', '_slots')
+        retries = 10
+        while retries > 0:
+            try:
+                res = self.conn.read(path)
+            except:
+                # we do not check for existence, on purpose
+                self.conn.write(path, 0)
+                return "0"
+            slot = (int(res.value) + 1) % self.AUDIT_LOG_LENGTH
+            try:
+                self.conn.write(path, slot, prevIndex = res.modifiedIndex)
+                return str(slot)
+            except:
+                retries -= 1
+        #we could not apply for a slot, it seems; just give up writing
+        return None
+
+    def add_audit(self, entity_name, obj_name, operation,
+                  data, auth_ctx, session):
+        """Add an entry in the audit log."""
+        if data is not None:
+            data = self.schema.get_entity(entity_name).to_net(data)
+        slot = self._get_audit_slot()
+        if slot is None:
+            return
+        path = os.path.join(self.root, '_audit', slot)
+
+        audit = {
+            'entity': entity_name,
+            'object': obj_name,
+            'op': operation,
+            'user': auth_ctx.get_username(),
+            'data': base64.b64encode(json.dumps(data)) if data else None,
+            'ts': time.time()
+        }
+        self.conn.write(path, json.dumps(audit))
+        try:
+            self.conn.write(path, json.dumps(audit), prevExists=False)
+        except ValueError:
+            pass
+
+    def get_audit(self, query, session):
+        """Query the audit log."""
+        # This is actually very expensive and this is why we have a limited number of slots
+        path = os.path.join(self.root, '_audit')
+        data = self.conn.read(path, recursive=True)
+        log = []
+
+        for result in data.kvs:
+            obj = json.loads(result.value)
+            if obj['data']:
+                obj['data'] = base64.b64decode(obj['data'])
+            matches = True
+
+            for (k,v) in query.iteritems():
+                if k not in obj:
+                    matches = False
+                    break
+                if obj[k] != v:
+                    matches = False
+                    break
+
+            if matches:
+                log.append(obj)
+        return log

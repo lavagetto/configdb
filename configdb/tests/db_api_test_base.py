@@ -87,6 +87,7 @@ class DbApiTestBase(object):
             self.api.find('host',
                           {'roles': {'type': 'eq', 'value': 'role1'}},
                           self.ctx))
+
         self.assertEquals(1, len(result))
         self.assertEquals('obz', result[0].name)
 
@@ -157,7 +158,7 @@ class DbApiTestBase(object):
 
     def test_create_with_relations(self):
         host_data = {'name': 'utz', 'ip': '2.3.4.5',
-                     'roles': ['role1']}
+                     'roles': ['a/i']}
         self.assertTrue(self.api.create('host', host_data, self.ctx))
 
     def test_create_unknown_entity(self):
@@ -194,13 +195,17 @@ class DbApiTestBase(object):
     def test_update_adds_audit_log(self):
         if not self.api.db.AUDIT_SUPPORT:
             return
+        old_result = list(self.api.get_audit({'entity': 'host',
+                                              'object': 'obz',
+                                              'op': 'update'}, self.ctx))
+
         result = self.api.update('host', 'obz', {'ip': '2.3.4.5'}, self.ctx)
         self.assertTrue(result)
 
         result = list(self.api.get_audit({'entity': 'host',
                                           'object': 'obz',
                                           'op': 'update'}, self.ctx))
-        self.assertEquals(1, len(result))
+        self.assertEquals(1, len(result) - len(old_result))
 
     # FIXME: should renaming even work?
     #
@@ -285,13 +290,17 @@ class DbApiTestBase(object):
     def test_delete_adds_audit_log(self):
         if not self.api.db.AUDIT_SUPPORT:
             return
+        old_result = list(self.api.get_audit({'entity': 'host',
+                                              'object': 'obz',
+                                              'op': 'delete'}, self.ctx))
+
         self.assertTrue(
             self.api.delete('host', 'obz', self.ctx))
 
         result = list(self.api.get_audit({'entity': 'host',
                                           'object': 'obz',
                                           'op': 'delete'}, self.ctx))
-        self.assertEquals(1, len(result))
+        self.assertEquals(1, len(result) - len(old_result))
 
     def test_delete_twice(self):
         self.assertTrue(

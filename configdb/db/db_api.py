@@ -52,7 +52,7 @@ class AdmDbApi(object):
         # Deserialize the input data.
         try:
             data = entity.from_net(data)
-        except ValueError, e:
+        except (ValueError, TypeError), e:
             raise exceptions.ValidationError(
                 'Validation error in deserialization: %s' % str(e))
 
@@ -106,7 +106,7 @@ class AdmDbApi(object):
                             'no such object, %s=%s' % (
                                 field.remote_name, rel_name))
                     relation.append(rel_obj)
-                for rel_name in to_remove: 
+                for rel_name in to_remove:
                     rel_obj = self.db.get_by_name(
                         field.remote_name, rel_name, session)
                     relation.remove(rel_obj)
@@ -117,7 +117,7 @@ class AdmDbApi(object):
         if entity_name in self.schema.sys_schema_tables:
             #Avoid updating timestamp for tables that are not part of the schema.
             return True
-        
+
         data = {'name': entity_name, 'ts': time.time() }
         ts = self.schema.get_entity('__timestamp')
         data = self._unpack(ts, data)
@@ -130,7 +130,7 @@ class AdmDbApi(object):
         else:
             obj = self.db.create('__timestamp', data, session)
         return True
-        
+
     @with_session
     @with_timestamp
     def update(self, session, entity_name, object_name, data, auth_context):

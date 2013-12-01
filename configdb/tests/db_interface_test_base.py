@@ -18,7 +18,7 @@ class DbInterfaceTestBase(object):
             s.add(a)
             s.add(b)
         return db
-        
+
     def test_init_ok(self):
         db = self.init_db()
         self.assertTrue(db is not None)
@@ -94,4 +94,3 @@ class DbInterfaceTestBase(object):
         r = self._find(db, 'host', {'roles': {'type': 'eq', 'value':'zzzz'}})
         self.assertEquals(0, len(r))
         db.close()
-                
