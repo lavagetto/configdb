@@ -41,7 +41,7 @@ class EtcdSession(inmemory_interface.InMemorySession):
             idx = self.db.conn.read(path).modifiedIndex
             opts = {'prevIndex': idx}
         except KeyError:
-            opts = {'prevExists': False}
+            opts = {'prevExist': False}
 
         # Will raise ValueError if the test fails.
         try:
@@ -188,7 +188,7 @@ class EtcdInterface(base.DbInterface):
         }
         self.conn.write(path, json.dumps(audit))
         try:
-            self.conn.write(path, json.dumps(audit), prevExists=False)
+            self.conn.write(path, json.dumps(audit), prevExist=False)
         except ValueError:
             pass
 
