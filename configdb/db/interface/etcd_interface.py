@@ -214,4 +214,4 @@ class EtcdInterface(base.DbInterface):
 
             if matches:
                 log.append(obj)
-        return log
+        return sorted(log, key=lambda k: k['ts'])
