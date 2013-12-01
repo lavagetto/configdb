@@ -22,11 +22,10 @@ class EtcdSession(inmemory_interface.InMemorySession):
         self.db = db
 
     def _escape(self,s):
-        # Hack alert! Since etcd interprets any '/' as a dir separator,
-        # we simply replace it with a double backslash in the path.
-        # this of course introduces a potential bug.
-        s = s.replace('/','\\\\')
-        return urllib.quote(s, safe='')
+        return s.encode('hex')
+
+    def _unescape(self, s):
+        return s.decode('hex')
 
     def _mkpath(self, entity_name, obj_name=None):
         path = os.path.join(self.db.root, self._escape(entity_name))
@@ -188,7 +187,7 @@ class EtcdInterface(base.DbInterface):
         }
         self.conn.write(path, json.dumps(audit))
         try:
-            self.conn.write(path, json.dumps(audit), prevExist=False)
+            self.conn.write(path, json.dumps(audit))
         except ValueError:
             pass
 
