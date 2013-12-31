@@ -37,7 +37,7 @@ class EtcdSession(inmemory_interface.InMemorySession):
         return path
 
 
-    def add(self, obj):
+    def add(self, obj, create=False):
         path = self._mkpath(obj._entity_name, obj.name)
         # If we don't have a revision,
         rev = self.revisions.get(path, None)
@@ -46,6 +46,9 @@ class EtcdSession(inmemory_interface.InMemorySession):
             opts = {'prevExist': False}
         else:
             opts = {'prevIndex': rev}
+
+        if create:
+            opts['prevExist'] = False
 
         # Will raise ValueError if the test fails.
         try:
@@ -91,7 +94,7 @@ class EtcdSession(inmemory_interface.InMemorySession):
 
     def _find(self, entity_name):
         path = self._mkpath(entity_name)
-        for r in self.db.conn.read(path, recursive = True).kvs:
+        for r in self.db.conn.read(path, recursive = True).children:
             if not r.dir:
                 curpath = r.key.replace(self.db.conn.key_endpoint,'')
                 self.revisions[curpath] = r.modifiedIndex
@@ -154,7 +157,7 @@ class EtcdInterface(base.DbInterface):
     def create(self, entity_name, attrs, session):
         entity = self.schema.get_entity(entity_name)
         obj = inmemory_interface.InMemoryObject(entity, attrs)
-        session.add(obj)
+        session.add(obj, create=True)
         return obj
 
     def delete(self, entity_name, obj_name, session):
@@ -218,7 +221,7 @@ class EtcdInterface(base.DbInterface):
             return []
         log = []
 
-        for result in data.kvs:
+        for result in data.children:
             obj = json.loads(result.value)
             if obj['data']:
                 obj['data'] = base64.b64decode(obj['data'])
