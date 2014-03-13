@@ -44,7 +44,7 @@ class SqlAlchemyDbInterface(base.DbInterface):
 
     AUDIT_SUPPORT = True
 
-    def __init__(self, uri, schema, schema_dir=None):
+    def __init__(self, uri, schema, schema_dir=None, opts={}):
         self.Session = sessionmaker(autocommit=False, autoflush=False)
         Base = declarative_base()
 
@@ -53,7 +53,7 @@ class SqlAlchemyDbInterface(base.DbInterface):
         self._schema_dir = schema_dir # unused, meant for caching
         self._load_schema()
 
-        self.engine = create_engine(uri, pool_recycle=1800)
+        self.engine = create_engine(uri, pool_recycle=1800, **opts)
         self.Session.configure(bind=self.engine)
         Base.metadata.create_all(self.engine)
 

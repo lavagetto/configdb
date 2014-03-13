@@ -215,11 +215,12 @@ def make_app(config={}):
     # Initialize the database interface.
     schema_obj = schema.Schema(app.config['SCHEMA_JSON'])
     db_driver = app.config.get('DB_DRIVER', 'sqlalchemy')
+    db_opts = app.config.get('DB_OPTIONS', {})
     if db_driver == 'sqlalchemy':
         from configdb.db.interface import sa_interface
         db = sa_interface.SqlAlchemyDbInterface(
             app.config.get('DB_URI', 'sqlite:///:memory:'),
-            schema_obj)
+            schema_obj, opts=db_opts)
     elif db_driver == 'leveldb':
         from configdb.db.interface import leveldb_interface
         db = leveldb_interface.LevelDbInterface(
@@ -230,8 +231,15 @@ def make_app(config={}):
         if not 'ZK_HOSTS' in app.config:
             raise Exception('you need to define ZK_HOSTS list to use zookeeper as db backend')
         db = zookeeper_interface.ZookeeperInterface(app.config['ZK_HOSTS'], schema_obj, app.config['DB_URI'])
+    elif db_driver == 'etcd':
+        from configdb.db.interface import etcd_interface
+        if not 'ETCD_URL' in app.config:
+            raise Exception(
+                'You need to define an ETCD_URL to use the etcd backend')
+        db = etcd_interface.EtcdInterface(
+            app.config['ETCD_URL'], schema_obj, **db_opts)
     else:
-        raise Exception('DB_DRIVER not one of "sqlalchemy" or "leveldb"')
+        raise Exception('DB_DRIVER not supported: %s' % db_driver)
 
     app.api = db_api.AdmDbApi(schema_obj, db)
 
